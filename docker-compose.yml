@@ -11,5 +11,32 @@ services:
     volumes:
       - waypoint-db-data:/var/lib/postgresql/data
 
+  # Local S3-compatible blob storage, standing in for Vercel Blob/R2 in dev
+  # (resumes and generated documents — Milestone 5). Console at :9001.
+  blob:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: waypoint
+      MINIO_ROOT_PASSWORD: waypoint-dev-secret
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - waypoint-blob-data:/data
+
+  # One-shot: creates the app's bucket on startup, then exits.
+  blob-init:
+    image: minio/mc:latest
+    depends_on:
+      - blob
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://blob:9000 waypoint waypoint-dev-secret; do sleep 1; done;
+      mc mb --ignore-existing local/waypoint-documents;
+      "
+
 volumes:
   waypoint-db-data:
+  waypoint-blob-data:

@@ -27,13 +27,24 @@ columns empty, table renders all 11 spec columns empty, logout clears the sessio
 logging back in with the same credentials works. Placeholder pages added at
 `/dashboard`, `/profile`, `/settings` so the nav has no dead links ahead of M3/M6/M7/M12.
 
-### M2 — Core CRUD ⬜
+### M2 — Core CRUD ✅
 Ships when a user can add, edit, move through every stage, and delete an application entirely through the table view.
-- [ ] Applications API (create/read/update/delete), scoped to the signed-in user
-- [ ] Quick-add form at `/applications/new`
-- [ ] Stage-change control that writes a `StageEvent`
-- [ ] Table view wired to real data: sort, search, stage/date filters
-- [ ] Delete or withdraw an application from the table
+- [x] Applications API (create/read/update/delete), scoped to the signed-in user — server actions in `src/lib/actions/applications.ts`, all scoped by `userId`
+- [x] Quick-add form at `/applications/new` — board's URL-paste field prefills the posting link
+- [x] Stage-change control that writes a `StageEvent` — dropdown on each board card
+- [x] Table view wired to real data: sort (clickable column headers), search (debounced), stage/fit/source/date filters
+- [x] Delete or withdraw an application from the table — trash icon per row, with confirm
+
+Verified in-browser: quick-add from the board toolbar lands on `/applications/new` with the
+posting link prefilled, creating an application drops it into Wishlist; the stage dropdown on
+a board card moves it between columns and stamps `dateApplied` the first time it hits
+Applied; the table reflects the same data with working stage/fit/source/date filters, debounced
+search, and sortable column headers (URL-driven, so state survives a refresh/share).
+
+Found and fixed along the way: Base UI's `<Select.Value>` only shows the resolved label
+before the popup has ever opened if `<Select.Root items={...}>` is given a value→label map —
+without it, the closed trigger displayed the raw enum value (`wishlist`, `all`) instead of
+the label (`Wishlist`, `Stage: All`). Fixed on both `StageSelect` and `TableFilters`.
 
 ## Phase 2 — Profile & records
 
@@ -119,5 +130,6 @@ Ships when a user can add, edit, move through every stage, and delete an applica
 - **Auth**: NextAuth v5 (beta) with the Credentials provider, JWT session strategy (Credentials doesn't support database sessions in v5, so no `@auth/prisma-adapter` is used).
 - **Next.js 16 renamed `middleware.ts` to `proxy.ts`** (same behavior, new name/export) — the auth guard lives at `src/proxy.ts`, not `src/middleware.ts`. Worth remembering since most existing docs/tutorials still say `middleware.ts`.
 - **Dev server preview**: `.claude/launch.json` config lives at the user's home directory (`~/.claude/launch.json`), not the project root — the Browser-pane tool resolves it from there.
+- **Local blob storage**: MinIO added to `docker-compose.yml` (S3-compatible) as the dev stand-in for Vercel Blob/R2 — console at `localhost:9001` (waypoint / waypoint-dev-secret), bucket `waypoint-documents` auto-created by the one-shot `blob-init` service. Not wired into the app yet — that's Milestone 5.
 
 See the full recommended defaults for the spec's open questions (§11) in the earlier build-plan artifact — those apply once we reach the milestones they affect (M9/M10 cadence and source list, M7 usage caps, etc.).
