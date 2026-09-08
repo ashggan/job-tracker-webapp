@@ -1,0 +1,249 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth ----------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+
+  profile       UserProfile?
+  apiKeys       UserApiKey[]
+  applications  Application[]
+  aiUsageLogs   AIUsageLog[]
+  resetTokens   PasswordResetToken[]
+}
+
+// Supports the in-app "forgot password" flow (§4). Not one of the spec's
+// core business entities — pure auth infrastructure.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------- Profile & preferences (§5.1) ----------
+
+model UserProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeFileUrl    String?
+  resumeStructured Json?
+  preferencesText  String?  @db.Text
+  updatedAt        DateTime @updatedAt
+}
+
+// ---------- AI provider & keys (§5.8) ----------
+
+enum LlmProvider {
+  anthropic
+  openai
+  google
+  other
+}
+
+model UserApiKey {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     LlmProvider
+  encryptedKey String      @db.Text
+  keyPreview   String
+  isActive     Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+
+  @@index([userId])
+}
+
+// ---------- Job aggregation (§5.2) ----------
+
+enum JobSourceType {
+  api
+  scrape
+}
+
+model JobSource {
+  id         String        @id @default(cuid())
+  name       String        @unique
+  type       JobSourceType
+  config     Json
+  enabled    Boolean       @default(true)
+  lastRunAt  DateTime?
+
+  rawListings RawListing[]
+}
+
+model RawListing {
+  id              String    @id @default(cuid())
+  sourceId        String
+  source          JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  externalId      String
+  title           String
+  company         String
+  location        String?
+  url             String
+  descriptionText String    @db.Text
+  postedAt        DateTime?
+  fetchedAt       DateTime  @default(now())
+
+  applications Application[]
+
+  @@unique([sourceId, externalId])
+  @@index([url])
+}
+
+// ---------- Applications: the core record (§5.5, §5.7) ----------
+
+enum Stage {
+  wishlist
+  applied
+  under_review
+  interview
+  offer
+  rejected
+  withdrawn
+}
+
+enum FitLabel {
+  stretch
+  fair
+  good
+  strong
+}
+
+model Application {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobTitle    String
+  company     String
+  postingUrl  String?
+  location    String?
+  source      String   // aggregated board name, or "manual"
+
+  rawListingId String?
+  rawListing   RawListing? @relation(fields: [rawListingId], references: [id], onDelete: SetNull)
+
+  stage       Stage    @default(wishlist)
+  dateFound   DateTime @default(now())
+  dateApplied DateTime?
+
+  fitScore        Int?
+  fitLabel        FitLabel?
+  fitStrengths    String?   @db.Text
+  fitGaps         String?   @db.Text
+  fitGeneratedAt  DateTime?
+
+  interviewPrepNotes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notes              Note[]
+  documents          Document[]
+  tailoredDocuments  TailoredDocument[]
+  stageEvents        StageEvent[]
+
+  @@index([userId, stage])
+}
+
+model Note {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  body          String      @db.Text
+  createdAt     DateTime    @default(now())
+
+  @@index([applicationId])
+}
+
+enum DocumentKind {
+  cv
+  cover_letter
+  other
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  applicationId String
+  application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  kind          DocumentKind
+  filename      String
+  storageUrl    String
+  uploadedAt    DateTime     @default(now())
+
+  @@index([applicationId])
+}
+
+enum TailoredKind {
+  cv
+  cover_letter
+}
+
+model TailoredDocument {
+  id            String       @id @default(cuid())
+  applicationId String
+  application   Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  kind          TailoredKind
+  version       Int
+  contentJson   Json
+  docxUrl       String?
+  createdAt     DateTime     @default(now())
+
+  @@index([applicationId, kind])
+}
+
+model StageEvent {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStage     Stage?
+  toStage       Stage
+  changedAt     DateTime    @default(now())
+
+  @@index([applicationId])
+}
+
+// ---------- AI usage accounting (§5.8, §5.10) ----------
+
+enum AIAction {
+  score
+  tailor_cv
+  tailor_cover_letter
+  extract_listing
+}
+
+enum KeySource {
+  shared_default
+  own_key
+}
+
+model AIUsageLog {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action       AIAction
+  provider     LlmProvider
+  keySource    KeySource
+  costEstimate Float
+  createdAt    DateTime    @default(now())
+
+  @@index([userId, createdAt])
+}

@@ -1,26 +1,178 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-surface-2: var(--surface-2);
+
+  /* Fit-score tiers (§5.3) — hue-coded, reused on board cards, table rows, detail view */
+  --color-stretch: var(--stretch);
+  --color-stretch-light: var(--stretch-light);
+  --color-fair: var(--fair);
+  --color-fair-light: var(--fair-light);
+  --color-good: var(--good);
+  --color-good-light: var(--good-light);
+  --color-strong: var(--strong);
+  --color-strong-light: var(--strong-light);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-4xl: 32px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Waypoint design tokens — warm neutral background, one confident amber accent (see design_handoff_job_tracker/tokens.css) */
+  --background: #faf6f0;
+  --foreground: #2b2420;
+  --card: #ffffff;
+  --card-foreground: #2b2420;
+  --popover: #ffffff;
+  --popover-foreground: #2b2420;
+  --primary: #d97706;
+  --primary-foreground: #ffffff;
+  --secondary: #f3ece1;
+  --secondary-foreground: #2b2420;
+  --muted: #f3ece1;
+  --muted-foreground: #8a7d70;
+  --accent: #fbead0;
+  --accent-foreground: #9a5605;
+  --destructive: #b3401f;
+  --border: #e7ddd0;
+  --input: #e7ddd0;
+  --ring: #d97706;
+  --chart-1: #d97706;
+  --chart-2: #1f7a3d;
+  --chart-3: #0d8a76;
+  --chart-4: #c2760a;
+  --chart-5: #8a7d70;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2b2420;
+  --sidebar-primary: #d97706;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3ece1;
+  --sidebar-accent-foreground: #2b2420;
+  --sidebar-border: #e7ddd0;
+  --sidebar-ring: #d97706;
+
+  --surface-2: #f3ece1;
+  --accent-dark: #9a5605;
+  --accent-light: #fbead0;
+  --shadow-sm: 0 1px 3px rgba(43, 36, 32, 0.06), 0 1px 2px rgba(43, 36, 32, 0.04);
+  --shadow-md: 0 6px 20px rgba(43, 36, 32, 0.08);
+  --shadow-lg: 0 20px 50px rgba(43, 36, 32, 0.14);
+
+  --stretch: #8a7d70;
+  --stretch-light: #efe9e1;
+  --fair: #c2760a;
+  --fair-light: #fbead0;
+  --good: #0d8a76;
+  --good-light: #e0f2ee;
+  --strong: #1f7a3d;
+  --strong-light: #e2f2e5;
+}
+
+.dark {
+  --background: #211c17;
+  --foreground: #f2ece3;
+  --card: #2b241d;
+  --card-foreground: #f2ece3;
+  --popover: #2b241d;
+  --popover-foreground: #f2ece3;
+  --primary: #e2952c;
+  --primary-foreground: #211c17;
+  --secondary: #382f25;
+  --secondary-foreground: #f2ece3;
+  --muted: #382f25;
+  --muted-foreground: #a99a89;
+  --accent: #3d2f18;
+  --accent-foreground: #f3b968;
+  --destructive: #d9704a;
+  --border: #463b2f;
+  --input: #463b2f;
+  --ring: #e2952c;
+  --chart-1: #e2952c;
+  --chart-2: #4ade80;
+  --chart-3: #2dd4bf;
+  --chart-4: #e2952c;
+  --chart-5: #a99a89;
+  --sidebar: #2b241d;
+  --sidebar-foreground: #f2ece3;
+  --sidebar-primary: #e2952c;
+  --sidebar-primary-foreground: #211c17;
+  --sidebar-accent: #382f25;
+  --sidebar-accent-foreground: #f2ece3;
+  --sidebar-border: #463b2f;
+  --sidebar-ring: #e2952c;
+
+  --surface-2: #382f25;
+  --accent-dark: #f3b968;
+  --accent-light: #3d2f18;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.55);
+
+  --stretch: #a99a89;
+  --stretch-light: #382f25;
+  --fair: #e2952c;
+  --fair-light: #3d2f18;
+  --good: #2dd4bf;
+  --good-light: #123a34;
+  --strong: #4ade80;
+  --strong-light: #163a22;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1, h2, h3, h4 {
+    @apply font-heading;
+    font-weight: 600;
+  }
 }
