@@ -1,6 +1,26 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { NewApplicationForm } from "./new-application-form";
+import { FormSkeleton } from "./form-skeleton";
+import { extractJobPostingMeta } from "@/lib/job-extraction";
+
+async function PrefillForm({ url }: { url?: string }) {
+  if (!url) return <NewApplicationForm />;
+
+  const meta = await extractJobPostingMeta(url);
+  const extractionFailed = !meta.jobTitle && !meta.company;
+
+  return (
+    <NewApplicationForm
+      defaultUrl={url}
+      defaultJobTitle={meta.jobTitle}
+      defaultCompany={meta.company}
+      defaultLocation={meta.location}
+      extractionFailed={extractionFailed}
+    />
+  );
+}
 
 export default async function NewApplicationPage({
   searchParams,
@@ -22,7 +42,9 @@ export default async function NewApplicationPage({
       <p className="mb-6 text-sm text-muted-foreground">
         Drops it into your Wishlist — fill in the rest, or edit it later.
       </p>
-      <NewApplicationForm defaultUrl={url} />
+      <Suspense key={url} fallback={<FormSkeleton />}>
+        <PrefillForm url={url} />
+      </Suspense>
     </div>
   );
 }

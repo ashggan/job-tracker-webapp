@@ -46,6 +46,18 @@ before the popup has ever opened if `<Select.Root items={...}>` is given a value
 without it, the closed trigger displayed the raw enum value (`wishlist`, `all`) instead of
 the label (`Wishlist`, `Stage: All`). Fixed on both `StageSelect` and `TableFilters`.
 
+**Added beyond the original checklist**: pasting a URL into the quick-add field now tries to
+extract job title, company, and location before showing the form (`src/lib/job-extraction.ts`)
+— no AI call, no API key needed. Looks for schema.org `JobPosting` JSON-LD first (what Google
+for Jobs uses, and what Greenhouse/Lever/Workday postings usually embed), then falls back to
+Open Graph tags (`og:title`/`og:site_name`, or splitting a "Title at Company" pattern). Streams
+in via a `Suspense` boundary with a skeleton while the fetch runs. Any field it can't find is
+left blank with a "couldn't detect — fill in below" note; extracted fields stay fully editable
+with a "double-check before saving" note. Verified against a real posting (Stripe's Greenhouse-
+adjacent careers page → correctly pulled "AI Engineer" / "Stripe" / "Toronto") and against a
+non-job page (Wikipedia) to confirm the OG fallback degrades sensibly rather than erroring.
+Includes a basic SSRF guard (blocks localhost/private-IP hostnames before fetching).
+
 ## Phase 2 — Profile & records
 
 ### M3 — Profile & preferences ⬜
