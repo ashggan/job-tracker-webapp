@@ -26,7 +26,7 @@ export function NavBar({ initials }: { initials: string }) {
   return (
     <header className="flex items-center gap-5 border-b border-border px-7 py-4.5">
       <Link href="/board" className="font-heading text-[19px] font-bold text-accent-foreground">
-        Waypoint
+        JOTA
       </Link>
       <nav className="flex items-center gap-1">
         {LINKS.map((link) => {
