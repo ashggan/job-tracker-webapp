@@ -61,7 +61,7 @@
 }
 
 :root {
-  /* Waypoint design tokens — warm neutral background, one confident amber accent (see design_handoff_job_tracker/tokens.css) */
+  /* JOTA design tokens — warm neutral background, one confident amber accent (see design_handoff_job_tracker/tokens.css) */
   --background: #faf6f0;
   --foreground: #2b2420;
   --card: #ffffff;

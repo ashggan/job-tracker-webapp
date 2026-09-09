@@ -156,7 +156,7 @@ export async function extractJobPostingMeta(url: string): Promise<ExtractedJobMe
     const response = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; WaypointJobTracker/1.0; +https://github.com/ashggan/job-tracker-webapp)",
+          "Mozilla/5.0 (compatible; JOTAJobTracker/1.0; +https://github.com/ashggan/job-tracker-webapp)",
         Accept: "text/html",
       },
       redirect: "follow",
