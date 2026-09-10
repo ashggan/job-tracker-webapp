@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude-generated notes/summaries/design docs (CLAUDE.md §8) — never committed.
+# Pre-existing project markdown is unaffected; this only ignores this specific dir.
+/docs/
