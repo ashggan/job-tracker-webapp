@@ -58,14 +58,19 @@ export async function validateProviderKey(
     return { valid: true };
   } catch (error) {
     if (APICallError.isInstance(error)) {
+      console.error(
+        `[validateProviderKey] ${provider} ${error.statusCode ?? "?"}: ${error.message}`,
+        error.responseBody
+      );
       if (error.statusCode === 401 || error.statusCode === 403) {
         return { valid: false, error: "That key was rejected — check it and try again" };
       }
       return {
         valid: false,
-        error: `Couldn't validate the key (${error.statusCode ?? "error"}) — try again`,
+        error: `Couldn't validate the key (${error.statusCode ?? "error"}): ${error.message}`,
       };
     }
+    console.error(`[validateProviderKey] ${provider} non-API-call error:`, error);
     return { valid: false, error: "Couldn't reach the provider to validate the key — try again" };
   }
 }
