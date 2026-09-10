@@ -80,18 +80,67 @@ Includes a basic SSRF guard (blocks localhost/private-IP hostnames before fetchi
 
 ## Phase 3 — AI layer
 
-### M6 — AI provider & key management ⬜
-- [ ] Settings UI to add/remove/activate a provider key, masked preview only
-- [ ] Encrypt keys at rest (AES-256-GCM, server-held key)
-- [ ] Provider-agnostic adapter interface; Anthropic implementation first
-- [ ] Default-vs-own-key routing resolved before every AI call
-- [ ] `AIUsageLog` write on every call
+### M6 — AI provider & key management ✅
+Built ahead of M4/M5 (detail view, documents) at the user's request — same kind of
+out-of-order pull as M3's file storage.
+- [x] Settings UI to add/remove/activate a provider key, masked preview only
+- [x] Encrypt keys at rest (AES-256-GCM, server-held key) — `src/lib/crypto.ts`
+- [x] Provider-agnostic adapter interface; Anthropic implementation first — `src/lib/ai/`
+- [x] Key routing resolved before every AI call — `resolveActiveKey()` in `src/lib/ai/keys.ts`
+- [x] `AIUsageLog` write on every call — write path exists (`tokensUsed` + `costEstimate`
+      columns), not yet called by anything since no AI feature (M7/M8) exists yet
+- [x] Key validated against Anthropic at entry (a real `models.list()` call), not accepted
+      blindly — resolves §11's open question
+- [x] Account section (name/email, change password) — not spec'd in detail anywhere beyond
+      the `/settings` route description, built from the design handoff (screen 6)
+- [x] "Export all data (CSV)" button — `/api/export`, account-level, no filters (distinct
+      from M12's filtered `/table` export)
+
+**Scope change — BYOK only, no shared default key** (explicit user decision, mid-build):
+the app never provides its own Claude key. Every AI feature is inert until a user adds their
+own. This removes the entire default-key/usage-cap mechanism §5.8 originally described —
+`SPEC.md` was updated throughout (§2, §5.3, §5.4, §5.8, §5.10, §6, §7, §9, §10, §11) to match.
+Schema: dropped `AIUsageLog.keySource` and the `KeySource` enum entirely (always "own key"
+now, so the distinction was vestigial) and added `tokensUsed Int` (the design's usage table
+shows token totals, which the schema never actually captured — only `costEstimate`).
+
+**AI usage panel placement resolved**: lives on `/settings`, not `/dashboard` — confirmed
+directly from the design handoff (`design_handoff_job_tracker/Job Tracker.dc.html`, screen 6),
+which shows "AI usage this period" with 2 stat totals + a 3-row breakdown table (Fit scoring /
+CV·letter tailoring / **Resume extraction**) directly under the AI provider section. The
+Resume-extraction row is what surfaced that `AIAction` was missing a value for it — added
+`extract_resume` to the enum (was only `score | tailor_cv | tailor_cover_letter |
+extract_listing`), ties back to the pinned resume-auto-extract plan (see M3).
+
+Verified in-browser (scripted Playwright run): signup → `/settings` → update name/email,
+reload confirms it persisted → change password → log out → log back in with the *new*
+password (confirms the hash actually changed, not just the success message) → add an
+invalid/fake Anthropic key → real validation call to Anthropic rejects it with an inline
+error (proves validate-on-entry actually round-trips to the provider, not just format
+checking) → usage table renders its three fixed rows at 0/0 (no AI calls exist yet) →
+CSV export button triggers a real download with the expected header row.
+
+**Multi-provider support added** (user request, same session): the key-management UI and
+validation now cover Claude, OpenAI, and Google — not Anthropic-only as first built. Used the
+**Vercel AI SDK** (`ai` + `@ai-sdk/anthropic` + `@ai-sdk/openai` + `@ai-sdk/google`) as the
+provider-agnostic call layer instead of hand-writing one adapter class per provider SDK — one
+`generateText({ model, prompt })` call shape works for all three, with the user's decrypted
+key passed in per-call (`createAnthropic({ apiKey })`, etc.), which is exactly what BYOK
+needs. `src/lib/ai/providers.ts` replaces the earlier Anthropic-only `src/lib/ai/anthropic.ts`
+— `getLanguageModel()` resolves a model for any supported provider, `validateProviderKey()`
+does the same live-validation-on-entry as before but for all three. The Settings "Add key"
+form gained a **Provider** select (Claude / OpenAI / Google); each saved key's card shows the
+right provider label. Verified with real (fake-credential) calls to both Anthropic and OpenAI
+— each correctly rejected by that provider's own API, confirming the wiring reaches the right
+service per provider rather than only ever hitting Anthropic. Google path wired identically
+but not separately live-tested.
 
 ### M7 — AI fit scoring ⬜
 - [ ] Scoring prompt + call → score, label, strengths, gaps
 - [ ] Auto-run on Wishlist ingestion; manual Re-score button
-- [ ] Per-user daily cap on the shared key, with a clear "add your own key" state
-- [ ] AI usage panel on `/dashboard` backed by `AIUsageLog`
+- [ ] Gate the feature on the user having an active key (`resolveActiveKey()`); no cap to
+      enforce since there's no shared key anymore (BYOK-only, see M6)
+- [x] AI usage panel — shipped early as part of M6, lives on `/settings` not `/dashboard`
 
 ### M8 — AI CV tailoring ⬜
 - [ ] Tailoring prompt + call → draft summary/skills/experience bullets

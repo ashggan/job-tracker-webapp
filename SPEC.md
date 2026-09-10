@@ -4,19 +4,22 @@
 
 Job applications are currently tracked through a folder-per-application workflow (the "proficiently" skill set) that produces `Job_Application_Tracker.xlsx` (an Active sheet and an Archive sheet) via `build_tracker.py`, plus a separate `to_apply_to_import.csv` "jobs to apply to" list that isn't merged into the tracker until an application is actually submitted. Interview prep notes, tailored CVs, and cover letters live as loose files inside each job's folder, and fit-scoring/CV-tailoring today happens as a manual, prompted AI workflow outside any single tool.
 
-This spec defines a standalone multi-user web application that replaces all of that with one tool: it aggregates new listings from job boards, scores each one against the user's resume with Claude, tracks the job through a pipeline from wishlist to outcome, and drafts a tailored CV (and cover letter) on request — with documents and notes attached directly to the application record instead of scattered across a folder tree.
+This spec defines a standalone multi-user web application — internally named **JOTA** — that replaces all of that with one tool: it aggregates new listings from the job boards each user personally trusts, scores each one against that user's resume with an LLM, tracks the job through a pipeline from wishlist to outcome, and drafts a tailored CV (and cover letter) on request — with documents and notes attached directly to the application record instead of scattered across a folder tree.
+
+In one line: **an elevated spreadsheet for tracking job applications, with AI support.** It is a personal tool, not a platform or a recruiting product — every user's sources, AI key, resume, and applications are theirs alone, with nothing shared or visible across accounts.
 
 No existing data is migrated as part of this build; the app launches empty. A CSV/JSON import feature is included so data can be brought in later (see 5.9).
 
 ## 2. Goals
 
 - One place to track every job from "found it" to "offer/rejected," replacing the xlsx tracker and the separate to-apply CSV.
-- Automatically aggregate new job listings from a configured set of job boards/feeds, filter them against each user's preferences, and drop matches into that user's Wishlist.
-- Score each listing's fit against the user's resume using Claude — numeric score, label, strengths, and gaps — automatically on ingestion, with manual re-score and manual override always available.
-- Draft a tailored CV (and optionally a cover letter) for a given application using Claude: editable in-app, exportable as a .docx or PDF.
+- Make the tool feel personal, not platform-y: each user picks their own job-board sources, brings their own AI key if they want to, and never sees or shares data with anyone else.
+- Automatically aggregate new job listings from the sources each user has chosen — a supported preset list, plus any custom source they add themselves — filter them against that user's preferences, and drop matches into their Wishlist.
+- Score each listing's fit against the user's resume using an LLM — numeric score, label, strengths, and gaps — automatically on ingestion, with manual re-score and manual override always available.
+- Draft a tailored CV (and optionally a cover letter) for a given application using an LLM: editable in-app, exportable as a .docx or PDF.
 - A kanban-style pipeline board as the primary working view, plus a sortable/filterable table view (the spreadsheet-equivalent view).
-- Usable by more than one person, each with their own private resume, preferences, and set of applications.
-- Every AI feature defaults to a Claude key provided by the app, with the option for each user to plug in their own API key — for Claude or another LLM provider — to use instead.
+- Usable by more than one person, each with their own private resume, preferences, sources, and set of applications.
+- Every AI feature runs on the user's own API key — for Claude or another LLM provider. The app never provides a shared/default key, so there's no shared billing exposure for the app owner; a user simply can't use AI features until they've added their own key.
 
 ## 3. Non-goals (out of scope for v1)
 
@@ -25,6 +28,7 @@ No existing data is migrated as part of this build; the app launches empty. A CS
 - No team/shared-workspace features (each user's data is private to them; no collaborators on one job).
 - No native mobile app — responsive web only.
 - No autonomous multi-step browsing agent — listing extraction is a single fetch-then-ask-Claude-to-structure-it pass, not an agent that clicks around a site.
+- Not a recruiting or applicant-tracking product for employers, and not a platform with any cross-user job discovery — this is a personal tool for the job seeker only, full stop.
 
 ## 4. Users & Access
 
@@ -41,23 +45,23 @@ Before AI features are useful, each user fills in:
 - **Resume**: uploaded base CV file (kept as the tailoring template) plus a structured breakdown (contact info, summary, skills, experience entries, education) that Claude uses as scoring/tailoring input. Structured fields can be auto-extracted from the uploaded file on first upload and then hand-edited.
 - **Preferences**: target roles, locations/remote requirements, compensation floor, must-haves, dealbreakers, nice-to-haves — the same shape as today's `preferences.md`, used both for aggregation filtering and as context for scoring.
 
-### 5.2 Job aggregation
+### 5.2 Job aggregation — from the sources each user trusts
 
-Pulls new listings on a schedule and proposes matches to each user's Wishlist, API-first with scraping as a named fallback:
+Sources are **per-user, not fixed by the app.** Every user manages their own list, in a new "Sources" settings screen (§7 `/sources`):
 
-- **Structured sources (API/feed)**: RemoteOK API, Arbeitnow API, Greenhouse job-board API and Lever job-board API (per company slugs the user or app tracks), We Work Remotely RSS/JSON feed. Preferred wherever a source offers one — reliable, no ToS risk, cheap to run.
-- **Scrape sources**: for boards with no API, fetch the page and pass the extracted text to Claude with an extraction prompt that returns structured fields (title, company, location, salary, URL, description). Based on the boards already in use (`to_apply_to_import.csv`), the initial scrape list is hiring.cafe, Wellfound, LinkedIn public job search, and ReliefWeb — confirm/adjust in §11 (LinkedIn carries the highest ToS/detection risk of the four).
-- **Shared fetch, per-user filtering**: each source is fetched once per run into a shared `RawListing` pool (not once per user), then each user's preference filters are applied to decide what becomes a Wishlist card for them, followed by that user's fit-scoring pass (5.3).
+- **Preset sources**: a supported list the app knows how to fetch, which a user toggles on/off for their own account — a mix of structured API/feed sources (RemoteOK API, Arbeitnow API, Greenhouse and Lever job-board APIs per company slug, We Work Remotely RSS/JSON feed) and scrape sources for boards with no API (fetch the page, pass the extracted text to an LLM with an extraction prompt that returns structured fields: title, company, location, salary, URL, description). Based on the boards already in use (`to_apply_to_import.csv`), the initial preset list includes hiring.cafe, Wellfound, LinkedIn public job search, and ReliefWeb alongside the API sources — confirm/adjust in §11 (LinkedIn carries the highest ToS/detection risk of the group).
+- **Custom sources**: a user can add a job board of their own by pasting its URL. This always runs as a scrape-plus-LLM-extraction source (5.8) scoped privately to that one user — see the risk note in §10 on why an arbitrary user-supplied URL is treated differently from a vetted preset.
+- **Shared fetch for shared sources, per-user filtering**: a *preset* source enabled by more than one user is still fetched once per run into a shared `RawListing` pool, not once per user — cost and load don't multiply with adoption. A *custom* source is fetched only for the one user who added it. Either way, each user's own preference filters decide what becomes a Wishlist card for them, followed by that user's fit-scoring pass (5.3).
 - **Dedup**: match incoming listings against a user's existing applications by canonical URL, falling back to a fuzzy company+title match, before creating a new card.
 - **Scheduling**: a scheduled job (e.g. Vercel Cron) triggers the aggregation run at a configured interval — see §11 for cadence.
-- **Manual add**: pasting a URL or a job description directly always remains available for anything aggregation misses.
+- **Manual add**: pasting a URL or a job description directly always remains available for anything aggregation misses — this is separate from adding a recurring custom *source* above (a one-off job vs. a board to watch going forward).
 
 ### 5.3 AI fit scoring
 
 - **Trigger**: automatic when a listing is added to a user's Wishlist via aggregation; on-demand "Re-score" button for manually-added jobs or after a resume/preferences edit.
 - **Input**: job posting text + the user's structured resume + preferences.
 - **Output** (stored on the application, always user-editable): numeric score 0–10, a label (Stretch / Fair / Good / Strong), a strengths list, and a gaps list — matching the shape of today's manual fit-scoring step.
-- Runs on the user's active key — the shared Claude default, or their own key if they've added one (5.8). Subject to the per-user usage cap in 5.8 only when running on the default key.
+- Runs on the user's own API key (5.8) — unavailable until they've added one.
 
 ### 5.4 AI CV tailoring
 
@@ -65,7 +69,7 @@ Pulls new listings on a schedule and proposes matches to each user's Wishlist, A
 - **Input**: the user's base resume (structured) + the job posting text.
 - **Output**: a tailored draft (summary, skills, reordered/reworded experience bullets) shown in an in-app editor. The user edits inline, then exports as a .docx or PDF built from their uploaded base-CV template (see §11 on template handling).
 - Tailoring attempts are versioned per application (re-running doesn't destroy the previous draft) — see `TailoredDocument` in §6.
-- Runs on the user's active key — the shared Claude default, or their own key if they've added one (5.8). Subject to the per-user usage cap in 5.8 only when running on the default key.
+- Runs on the user's own API key (5.8) — unavailable until they've added one.
 
 ### 5.5 Pipeline board (primary view)
 
@@ -108,11 +112,12 @@ Full record for one job, editable inline:
 
 Every AI-powered feature (5.3 scoring, 5.4 tailoring, and the extraction pass in 5.2) runs through a single provider-agnostic call layer, so which model actually answers a given call depends on which key is active for that user:
 
-- **Default**: every user starts on the app owner's Claude API key — no setup required.
-- **Bring your own key**: in Settings, a user can add their own API key for Claude or another supported LLM provider (initial list to confirm in §11). Once added and marked active, that user's scoring/tailoring/extraction calls route through their own key and provider instead of the shared default.
-- Keys are stored encrypted at rest (see §8) and are never displayed again in full after entry — only a masked preview (e.g. `sk-...ab12`) — with a "Remove key" action that reverts the user to the shared default.
+- **No shared/default key.** The app never provides its own Claude key — there is no shared billing key, no app-owner-funded usage, and no per-user usage cap to manage. Every AI feature is inert until the user adds their own key.
+- **Bring your own key**: in Settings, a user adds their own API key for Claude or another supported LLM provider (initial list to confirm in §11). Once added and marked active, that user's scoring/tailoring/extraction calls route through their own key and provider.
+- Keys are stored encrypted at rest (see §8) and are never displayed again in full after entry — only a masked preview (e.g. `sk-...ab12`) — with a "Remove key" action.
 - A user may hold saved keys for more than one provider, but only one is "active" at a time; switching is a Settings toggle, not a per-call choice.
-- **Usage cap**: since the app owner's key is shared and billed to them, every call made on the default key is logged (user, action type, provider, timestamp, token/cost estimate) and checked against a configurable per-user cap (e.g. N scoring calls and M tailoring calls per day). Calls made on a user's own key are logged the same way for that user's own visibility (5.10) but are not capped, since the cost is already theirs. A user who hits the default-key cap sees a clear message, keeps full access to every non-AI feature (manual entry, board, table, notes), and can lift the cap immediately by adding their own key.
+- **Key validation**: a submitted key is validated with the provider at entry (a cheap, no-cost call) rather than accepted blindly — a bad or expired key is rejected immediately with a clear error, instead of failing silently on first real use.
+- **Usage accounting**: every AI call is logged (user, action type, provider, timestamp, token/cost estimate) for that user's own visibility (5.10) — since every call runs on the user's own key, this is accounting only, with no cap to enforce.
 
 ### 5.9 Import / export
 
@@ -123,7 +128,7 @@ Every AI-powered feature (5.3 scoring, 5.4 tailoring, and the extraction pass in
 
 A summary view built around two parts:
 
-- **AI usage panel** (required for v1, ships alongside the cap in 5.8): calls made and estimated tokens consumed this period, broken down by action type (scoring / tailoring / listing extraction) and by which key served them — shared default vs. the user's own — pulled from `AIUsageLog` (§6). This is what lets a user see exactly what's driving their usage before they hit the default-key cap, and confirm their own key is actually being used once they add one.
+- **AI usage panel** (required for v1; lives on `/settings` per §7, not this page): calls made and estimated tokens consumed this period, broken down by action type (scoring / tailoring / extraction) — pulled from `AIUsageLog` (§6). Since every call runs on the user's own key, this is spend visibility only, not a cap-tracking tool.
 - **Application stats** (nice-to-have, not blocking v1): total active applications, counts per stage, average fit score, applications-per-week trend, and a simple funnel (Wishlist → Applied → Interview → Offer) conversion view.
 
 ## 6. Data model
@@ -142,10 +147,13 @@ UserProfile
 UserApiKey                         -- bring-your-own LLM keys (5.8)
   id, user_id (FK), provider (enum: anthropic | openai | google | other), encrypted_key, key_preview (masked, e.g. "sk-...ab12"), is_active, created_at
 
-JobSource
-  id, name, type (api | scrape), config JSON (endpoint / company slug / URL pattern), enabled, last_run_at
+JobSource                          -- sources are per-user (5.2), not a fixed app-wide list
+  id, name, type (api | scrape), scope (enum: preset | custom), owner_user_id (FK, nullable — set only for a custom source added by one user; null for a preset), config JSON (endpoint / company slug / URL pattern), enabled, last_run_at
 
-RawListing                        -- shared pool, one row per listing seen, pre per-user filtering
+UserJobSource                      -- which sources a user has turned on
+  id, user_id (FK), job_source_id (FK), enabled, added_at
+
+RawListing                        -- shared pool for preset sources (fetched once regardless of how many users enabled them); custom sources populate it too, just for their one owning user
   id, source_id (FK), external_id, title, company, location, url, description_text, posted_at, fetched_at
 
 Application
@@ -174,8 +182,8 @@ TailoredDocument                   -- AI-drafted CV/cover-letter versions
 StageEvent                         -- auto-logged history
   id, application_id (FK), from_stage, to_stage, changed_at
 
-AIUsageLog                         -- cost control / accounting / dashboard usage panel
-  id, user_id (FK), action (score | tailor_cv | tailor_cover_letter | extract_listing), provider, key_source (enum: shared_default | own_key), cost_estimate, created_at
+AIUsageLog                         -- accounting / usage panel (every call runs on the user's own key — no shared/default key)
+  id, user_id (FK), action (score | tailor_cv | tailor_cover_letter | extract_listing | extract_resume), provider, tokens_used, cost_estimate, created_at
 ```
 
 ## 7. Pages / routes
@@ -189,9 +197,10 @@ AIUsageLog                         -- cost control / accounting / dashboard usag
 | `/applications/new` | Quick-add form (title, company, link, location — the rest filled in later) |
 | `/dashboard` | Stats summary |
 | `/profile` | Resume + preferences (required before scoring/tailoring/aggregation filtering work) |
-| `/settings` | Account settings, LLM API key management (default Claude, or your own key/provider), AI usage & token consumption this period, data export |
+| `/sources` | Manage job sources — toggle preset boards on/off, add/remove a custom board by URL |
+| `/settings` | Account settings, LLM API key management (bring your own key — Claude or another provider; required for any AI feature), AI usage & token consumption this period, data export |
 
-API: REST or Next.js server actions under `/api/applications`, `/api/applications/[id]/documents`, `/api/applications/[id]/notes`, `/api/applications/[id]/score`, `/api/applications/[id]/tailor`, `/api/aggregate` (cron-triggered), `/api/settings/api-keys` (add/remove/activate a provider key), `/api/export`, `/api/import`.
+API: REST or Next.js server actions under `/api/applications`, `/api/applications/[id]/documents`, `/api/applications/[id]/notes`, `/api/applications/[id]/score`, `/api/applications/[id]/tailor`, `/api/sources` (list presets, toggle, add/remove a custom source), `/api/aggregate` (cron-triggered), `/api/settings/api-keys` (add/remove/activate a provider key), `/api/export`, `/api/import`.
 
 ## 8. Tech stack
 
@@ -200,7 +209,7 @@ API: REST or Next.js server actions under `/api/applications`, `/api/application
 - **Auth**: NextAuth.js (Auth.js) with email/password credentials provider, extensible to OAuth (Google/GitHub) later.
 - **AI**: Anthropic API (Claude) via the official SDK as the default provider, called server-side only — keys are never exposed to the browser. Used for fit scoring, CV/cover-letter tailoring, and structuring scraped listing text.
 - **AI provider abstraction**: a thin server-side adapter interface wrapping each supported provider SDK (Anthropic by default; OpenAI and/or Google as optional bring-your-own-key providers — see §11) behind one call shape, so scoring/tailoring/extraction code doesn't need to know which provider is active for a given user.
-- **API key storage**: user-supplied keys (`UserApiKey`, §6) are encrypted at rest — e.g. AES-256-GCM with a server-held encryption key via Node's built-in `crypto`, or a secrets-manager-backed KMS — and decrypted only at call time. The app owner's own default key is held as a server environment variable, never in the database.
+- **API key storage**: user-supplied keys (`UserApiKey`, §6) are encrypted at rest — e.g. AES-256-GCM with a server-held encryption key via Node's built-in `crypto`, or a secrets-manager-backed KMS — and decrypted only at call time. There is no app-owner default key held anywhere.
 - **Job aggregation**: scheduled trigger (Vercel Cron or equivalent) hitting an internal aggregation route; per-source fetchers for the APIs/feeds in 5.2, plus a fetch+Claude-extract path for scrape sources.
 - **File storage**: Vercel Blob or an S3-compatible bucket (e.g. Cloudflare R2) for uploaded resumes and generated documents.
 - **DOCX / PDF generation**: a template-based library (e.g. `docx` or `docxtemplater`) that fills the user's uploaded base-CV template with the tailored content, plus a DOCX→PDF conversion step (e.g. a headless LibreOffice/`unoconv` pass, or a hosted conversion API) for the PDF export option.
@@ -214,26 +223,27 @@ API: REST or Next.js server actions under `/api/applications`, `/api/application
 3. **Profile & preferences** — resume upload + structured breakdown, preferences form (blocks meaningful scoring/tailoring/aggregation until filled in).
 4. **Detail view** — notes log, stage history timeline, manual fit-score entry.
 5. **Documents** — file upload/storage, attach/preview CV and cover letter per application.
-6. **AI provider & key management** — Settings UI to add/remove/activate a personal LLM key per provider, encrypted storage, the provider-agnostic call layer, and default-vs-own-key routing (5.8). Built before the AI features below so they have a routing layer to call into from the start.
-7. **AI fit scoring** — Claude scoring call, auto-run on ingestion, manual re-score, usage logging/cap, and the AI usage panel on the dashboard (5.8, 5.10).
+6. **AI provider & key management** — Settings UI to add/remove/activate a personal LLM key per provider (bring-your-own-key only, no shared default), key validation at entry, encrypted storage, and the provider-agnostic call layer (5.8). Built before the AI features below so they have a routing layer to call into from the start.
+7. **AI fit scoring** — Claude scoring call, auto-run on ingestion, manual re-score, usage logging, and the AI usage panel on Settings (5.8, 5.10).
 8. **AI CV tailoring** — drafting call, in-app editor, DOCX/PDF export from the user's base template, versioned drafts.
-9. **Job aggregation, structured sources** — RemoteOK/Arbeitnow/Greenhouse/Lever/We Work Remotely fetchers, shared `RawListing` pool, per-user preference filtering, dedup, scheduling.
-10. **Job aggregation, scrape sources** — fetch+extraction path for hiring.cafe/Wellfound/LinkedIn/ReliefWeb (or the confirmed list from §11).
-11. **Board polish** — drag-and-drop between stages, card design, days-in-stage indicator.
-12. **Dashboard & export** — application stats view (funnel, trends), CSV export.
-13. **Import** — CSV import mapped to the schema (fast-follow, not required to launch).
+9. **Source management** — the `/sources` settings screen: preset list with on/off toggles, add/remove a custom source by URL, `JobSource`/`UserJobSource` data model.
+10. **Job aggregation, structured sources** — RemoteOK/Arbeitnow/Greenhouse/Lever/We Work Remotely fetchers, shared `RawListing` pool for presets, per-user preference filtering, dedup, scheduling.
+11. **Job aggregation, scrape + custom sources** — fetch+extraction path for preset scrape boards (hiring.cafe/Wellfound/LinkedIn/ReliefWeb, or the confirmed list from §11) and for any user-added custom source URL.
+12. **Board polish** — drag-and-drop between stages, card design, days-in-stage indicator.
+13. **Dashboard & export** — application stats view (funnel, trends), CSV export.
+14. **Import** — CSV import mapped to the schema (fast-follow, not required to launch).
 
 ## 10. Cost & risk notes
 
-- Every aggregation run, scoring call, and tailoring call made on the shared default key costs tokens billed to the app owner — 5.8's per-user cap exists specifically to bound this, and the aggregation design fetches each source once per run rather than once per user to avoid multiplying scrape/API cost by user count.
-- Letting a user bring their own key (5.8) moves that user's scoring/tailoring/extraction cost off the app owner's bill entirely, which is the main lever for keeping total shared-key spend bounded as the user base grows.
+- Every scoring call, tailoring call, and scrape-source extraction pass runs on the user's own key (5.8) — there is no shared/default key, so the app owner never bears AI usage cost. The aggregation design still fetches each *preset* source once per run rather than once per user, to avoid multiplying fetch/scrape load by user count, even though the LLM extraction step within that pipeline bills to whichever user's key ran it.
 - Scraping (as opposed to using an API/feed) carries a standing maintenance cost — sites change layout and can block or rate-limit fetches — and, for a site like LinkedIn, a ToS risk independent of the technical cost.
+- Custom user-added sources (5.2) are a different risk shape than presets: a preset list is vetted once by the app owner, but a custom source is an arbitrary URL a user supplies, fetched and handed to an LLM for extraction. Worth deciding safeguards before launch — e.g. blocking obviously unsafe targets (internal/private network addresses), a per-user cap on custom sources, and being clear that a custom source's reliability (layout changes, logins, paywalls) is the user's own risk to manage, unlike a preset.
 
 ## 11. Open questions
 
-- Confirm the scrape-source list (proposed: hiring.cafe, Wellfound, LinkedIn public search, ReliefWeb, based on `to_apply_to_import.csv`) — in particular, is LinkedIn's ToS/detection risk acceptable, or should it be dropped from v1?
-- Aggregation cadence (hourly? a few times a day? daily?).
-- Exact per-user AI usage caps (scoring calls/day, tailoring calls/day) — and what a user sees/can do once they hit one.
+- Confirm the *preset* scrape-source list (proposed: hiring.cafe, Wellfound, LinkedIn public search, ReliefWeb, based on `to_apply_to_import.csv`) — in particular, is LinkedIn's ToS/detection risk acceptable, or should it be dropped from v1? (Users can still add it themselves as a custom source regardless.)
+- Aggregation cadence (hourly? a few times a day? daily?) — and whether it's the same cadence for every user, or configurable per source/user.
+- Any limit on how many custom sources one user can add, and how a custom source's URL is validated before the app starts fetching it on a schedule?
 - Should listings that clearly fail a user's dealbreakers (on-site, below salary floor) be silently dropped during filtering, or still surfaced in a "not a match" list for visibility?
 - Base CV template handling: one uploaded template per user reused for all tailored DOCX output, or support multiple templates (e.g. one per role type)?
 - Email verification required at signup, or optional for v1?
@@ -241,5 +251,5 @@ API: REST or Next.js server actions under `/api/applications`, `/api/application
 - Attachment limits: file types and max size for uploaded resumes/documents (e.g. PDF/DOCX only, 10MB cap)?
 - Preferred hosting: default recommendation is Vercel + Neon (Postgres) + Vercel Blob + Vercel Cron — confirm before scaffolding, or specify an alternative.
 - Which LLM providers to support for bring-your-own-key beyond Claude — OpenAI and Google Gemini are the obvious next two; confirm the initial list.
-- How should a submitted API key be validated at entry — a cheap test call to the provider right away, versus accepting it and only discovering a problem on first real use?
+- ~~How should a submitted API key be validated at entry~~ — resolved: validated with the provider at entry (§5.8), not deferred to first real use.
 - Do the scoring rubric, tailoring instructions, and listing-extraction schema need per-provider prompt tuning, or is one prompt set assumed to work across providers at v1?
