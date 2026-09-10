@@ -60,12 +60,37 @@ Includes a basic SSRF guard (blocks localhost/private-IP hostnames before fetchi
 
 ## Phase 2 — Profile & records
 
-### M3 — Profile & preferences ⬜
-- [ ] Resume upload → stored as the tailoring template
-- [ ] Structured resume form (contact, summary, skills, experience, education)
-- [ ] One-shot Claude auto-extract from the uploaded resume (after M6 lands)
-- [ ] Preferences form (roles, locations, comp floor, must-haves, dealbreakers, nice-to-haves)
-- [ ] Gate scoring/tailoring/aggregation entry points until the profile is complete
+### M3 — Profile & preferences ✅
+- [x] Resume upload → stored as the tailoring template
+- [x] Structured resume form (contact, summary, skills, experience, education)
+- [ ] One-shot Claude auto-extract from the uploaded resume (after M6 lands) — deferred, needs the AI provider layer from M6
+- [x] Preferences form (roles, locations, comp floor, must-haves, dealbreakers, nice-to-haves)
+- [x] Gate scoring/tailoring/aggregation entry points until the profile is complete — `isProfileComplete()` in `src/lib/profile.ts`, surfaced as a banner on `/profile`; no actual scoring/tailoring/aggregation entry points exist yet to gate (M6+), so there's nothing else to wire up until then
+
+Verified in-browser (scripted Playwright run against the dev server): sign up, land on
+`/profile`, upload a PDF resume and see it listed with a working (presigned, 5-minute)
+download link, fill in contact/summary/skills/one experience entry/one education entry and
+save — reload shows the same values still populated — fill in preferences and save — reload
+persists that too — remove the resume and confirm the listing disappears. All values round-
+tripped through Postgres exactly as entered.
+
+**File storage pulled forward from Milestone 5**: `src/lib/storage.ts` wires the MinIO
+container (already in `docker-compose.yml`, previously unused) via `@aws-sdk/client-s3` +
+`@aws-sdk/s3-request-presigner` — upload on the server, download via a short-lived presigned
+URL rather than a public bucket. New env vars: `BLOB_STORAGE_ENDPOINT/ACCESS_KEY/SECRET_KEY/
+BUCKET` (dev defaults match the existing MinIO credentials in docker-compose). Scoped to the
+one resume file for now; M5 will extend this same module to per-application documents (CV
+used, cover letter) and add the production Vercel Blob branch. PDF/DOCX only, 10MB cap —
+picked as the sensible default from §11's open question, not yet confirmed with the user.
+Resume filename is derived from the storage key (`resumes/{userId}/{timestamp}-{filename}`)
+rather than a new DB column, matching the spec's data model (`UserProfile` has no filename
+field).
+
+**Known cosmetic issue**: Base UI's `<Input>` primitive logs a dev-only hydration-mismatch
+warning (a `caret-color` inline style) when rendered with a non-empty `defaultValue` — first
+surfaced here since this is the first form with server-populated text inputs. Doesn't affect
+behavior (values save/reload correctly) and isn't something to fix in app code; would need a
+Base UI version bump or patch.
 
 ### M4 — Detail view ⬜
 - [ ] Editable core fields on `/applications/[id]`
