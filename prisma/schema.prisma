@@ -68,6 +68,7 @@ model UserApiKey {
   isActive     Boolean     @default(false)
   createdAt    DateTime    @default(now())
 
+  @@unique([userId, provider])
   @@index([userId])
 }
 
@@ -228,11 +229,7 @@ enum AIAction {
   tailor_cv
   tailor_cover_letter
   extract_listing
-}
-
-enum KeySource {
-  shared_default
-  own_key
+  extract_resume
 }
 
 model AIUsageLog {
@@ -241,7 +238,7 @@ model AIUsageLog {
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   action       AIAction
   provider     LlmProvider
-  keySource    KeySource
+  tokensUsed   Int         @default(0)
   costEstimate Float
   createdAt    DateTime    @default(now())
 
