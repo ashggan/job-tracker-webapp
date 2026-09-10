@@ -15,7 +15,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Waypoint",
+  title: "JOTA",
   description: "Track every job application in one place.",
 };
 

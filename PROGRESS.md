@@ -1,8 +1,8 @@
-# Waypoint — Implementation Progress
+# JOTA — Implementation Progress
 
 Living tracker for the build described in `SPEC.md`, sequenced per the 13-milestone plan. Check items off as they land; update "Status" as a milestone starts/finishes. This file is committed to git, so history shows when each piece landed.
 
-Design source: `DESIGN_PROMPT.md` + the handed-off canvas (`Job Tracker.dc.html` / `tokens.css`, applied via `src/app/globals.css` and `tailwind.config`). Product name from the design: **Waypoint**.
+Design source: `DESIGN_PROMPT.md` + the handed-off canvas (`Job Tracker.dc.html` / `tokens.css`, applied via `src/app/globals.css` and `tailwind.config`). Product name from the design was originally **Waypoint**, renamed to **JOTA**.
 
 Legend: ⬜ not started · 🔷 in progress · ✅ done
 
@@ -14,7 +14,7 @@ Legend: ⬜ not started · 🔷 in progress · ✅ done
 Ships when a new user can sign up, log in, see an empty board and table, and log out.
 - [x] Scaffold Next.js App Router + TypeScript project, ESLint/Prettier
 - [x] Install Tailwind CSS + shadcn/ui base components
-- [x] Apply Waypoint design tokens (Lora + Manrope, warm palette, pill radii) into Tailwind/globals.css
+- [x] Apply JOTA design tokens (Lora + Manrope, warm palette, pill radii) into Tailwind/globals.css
 - [x] Add Prisma, write `schema.prisma` for all 11 entities, run first migration (local Postgres via Docker Compose)
 - [x] Wire NextAuth credentials provider (bcrypt) + signup/login/logout pages
 - [x] Build app shell nav (Board/Table/Dashboard/Profile/Settings) + auth-guard middleware
@@ -136,7 +136,7 @@ Includes a basic SSRF guard (blocks localhost/private-IP hostnames before fetchi
 
 - **Package manager**: npm (already present on this machine; no need to introduce pnpm/yarn).
 - **Local database**: Postgres via Docker Compose (`docker-compose.yml`) for dev — no external account needed to start. Point `DATABASE_URL` at Neon (or similar) for production later.
-- **Product name**: Waypoint, taken from the design handoff.
+- **Product name**: JOTA (originally Waypoint, taken from the design handoff, later renamed).
 - **UI**: Tailwind + shadcn/ui, themed to the handed-off tokens (`--bg #faf6f0`, `--accent #d97706`, Lora/Manrope, pill radii) rather than shadcn's defaults.
 - **Prisma pinned to 6.19.3**, not the `latest`-tagged 8.0.0 release candidate npm resolved by default — that RC's bundled dev tooling (`@prisma/dev`, an embedded Hono server) carried several high-severity advisories, and its CLI version didn't even match the 7.x client it pulled in.
 - **Auth**: NextAuth v5 (beta) with the Credentials provider, JWT session strategy (Credentials doesn't support database sessions in v5, so no `@auth/prisma-adapter` is used).

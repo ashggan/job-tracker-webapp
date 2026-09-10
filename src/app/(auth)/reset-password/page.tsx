@@ -12,7 +12,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="w-full max-w-[400px] rounded-xl bg-card p-6 shadow-[var(--shadow-md)]">
       <div className="mb-4.5 font-heading text-lg font-bold text-accent-foreground">
-        Waypoint
+        JOTA
       </div>
       <h2 className="text-[26px]">Reset your password</h2>
       <p className="mb-5.5 text-[13px] text-muted-foreground">
