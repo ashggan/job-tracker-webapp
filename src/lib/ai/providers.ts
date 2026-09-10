@@ -18,7 +18,7 @@ export const PROVIDER_LABELS: Record<SupportedProvider, string> = {
 const DEFAULT_MODEL: Record<SupportedProvider, string> = {
   anthropic: "claude-haiku-4-5",
   openai: "gpt-4o-mini",
-  google: "gemini-2.0-flash",
+  google: "gemini-3.6-flash",
 };
 
 function isSupportedProvider(provider: LlmProvider): provider is SupportedProvider {
