@@ -3,8 +3,8 @@
 # Git & GitHub Workflow Rules
 
 ## 1. Branch Safety
-- Never commit directly to `main`. All work happens on a feature/topic branch.
-- If asked to make changes while on `main`, create and switch to a new branch first
+- Never commit directly to `master`. All work happens on a feature/topic branch.
+- If asked to make changes while on `master`, create and switch to a new branch first
   (ask for a name or propose one, e.g. `feature/`, `fix/`, `chore/` prefix) before committing.
 - Never force-push (`--force` / `--force-with-lease`) without explicit approval.
 - Never rewrite history (`rebase -i`, `commit --amend`, `reset --hard`) on a branch
