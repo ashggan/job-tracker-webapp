@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
+import { Download } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUsageSummary } from "@/lib/ai/usage";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { AccountSection } from "./account-section";
 import { ApiKeySection } from "./api-key-section";
 
@@ -82,7 +85,10 @@ export default async function SettingsPage() {
 
       <section>
         <h3 className="mb-2.5 text-xl">Data</h3>
-        <p className="text-sm text-muted-foreground">Export ships next.</p>
+        <a href="/api/export" className={cn(buttonVariants({ variant: "outline" }))}>
+          <Download className="size-4" />
+          Export all data (CSV)
+        </a>
       </section>
     </div>
   );
