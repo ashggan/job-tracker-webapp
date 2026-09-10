@@ -1,20 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import { FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { SubmitButton } from "@/components/submit-button";
 import { uploadResumeAction, removeResumeAction } from "@/lib/actions/profile";
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="sm" disabled={pending}>
-      {pending ? "Uploading…" : "Upload"}
-    </Button>
-  );
-}
 
 export function ResumeUploadForm({
   resumeFilename,
@@ -59,7 +50,9 @@ export function ResumeUploadForm({
             required
             className="flex-1 text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3.5 file:py-1.5 file:text-sm file:font-semibold file:text-secondary-foreground"
           />
-          <SubmitButton />
+          <SubmitButton size="sm" pendingLabel="Uploading…">
+            Upload
+          </SubmitButton>
         </form>
         {state?.error && (
           <p className="text-[13px] text-destructive" role="alert">

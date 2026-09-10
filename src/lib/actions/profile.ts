@@ -34,21 +34,19 @@ export async function uploadResumeAction(
     return { error: "File is too large — 10MB max" };
   }
 
-  const existing = await prisma.userProfile.findUnique({
-    where: { userId: session.user.id },
-  });
+  const [existing, key] = await Promise.all([
+    prisma.userProfile.findUnique({ where: { userId: session.user.id } }),
+    uploadResumeFile(session.user.id, file),
+  ]);
 
-  const key = await uploadResumeFile(session.user.id, file);
-
-  await prisma.userProfile.upsert({
-    where: { userId: session.user.id },
-    create: { userId: session.user.id, resumeFileUrl: key },
-    update: { resumeFileUrl: key },
-  });
-
-  if (existing?.resumeFileUrl) {
-    await deleteResumeFile(existing.resumeFileUrl).catch(() => {});
-  }
+  await Promise.all([
+    prisma.userProfile.upsert({
+      where: { userId: session.user.id },
+      create: { userId: session.user.id, resumeFileUrl: key },
+      update: { resumeFileUrl: key },
+    }),
+    existing?.resumeFileUrl ? deleteResumeFile(existing.resumeFileUrl).catch(() => {}) : null,
+  ]);
 
   revalidatePath("/profile");
   return undefined;
@@ -63,11 +61,13 @@ export async function removeResumeAction(): Promise<void> {
   });
   if (!existing?.resumeFileUrl) return;
 
-  await prisma.userProfile.update({
-    where: { userId: session.user.id },
-    data: { resumeFileUrl: null },
-  });
-  await deleteResumeFile(existing.resumeFileUrl).catch(() => {});
+  await Promise.all([
+    prisma.userProfile.update({
+      where: { userId: session.user.id },
+      data: { resumeFileUrl: null },
+    }),
+    deleteResumeFile(existing.resumeFileUrl).catch(() => {}),
+  ]);
 
   revalidatePath("/profile");
 }
@@ -107,36 +107,48 @@ function field(formData: FormData, name: string): string {
   return String(formData.get(name) ?? "").trim();
 }
 
-function parseExperienceRows(formData: FormData, count: number) {
-  const rows = [];
-  for (let i = 0; i < count; i++) {
-    rows.push({
-      title: field(formData, `experience.${i}.title`),
-      company: field(formData, `experience.${i}.company`),
-      location: field(formData, `experience.${i}.location`),
-      startDate: field(formData, `experience.${i}.startDate`),
-      endDate: field(formData, `experience.${i}.endDate`),
-      bullets: field(formData, `experience.${i}.bullets`)
-        .split("\n")
-        .map((b) => b.trim())
-        .filter(Boolean),
-    });
-  }
-  return rows;
+function fieldAll(formData: FormData, name: string): string[] {
+  return formData.getAll(name).map((v) => String(v).trim());
 }
 
-function parseEducationRows(formData: FormData, count: number) {
-  const rows = [];
-  for (let i = 0; i < count; i++) {
-    rows.push({
-      school: field(formData, `education.${i}.school`),
-      degree: field(formData, `education.${i}.degree`),
-      field: field(formData, `education.${i}.field`),
-      startDate: field(formData, `education.${i}.startDate`),
-      endDate: field(formData, `education.${i}.endDate`),
-    });
-  }
-  return rows;
+// Every row's inputs share the same `name` — the browser submits repeated
+// same-name fields in DOM order, so getAll() gives one parallel array per
+// column and index i across arrays is row i. No hidden row-count field needed.
+function parseExperienceRows(formData: FormData) {
+  const titles = fieldAll(formData, "experience.title");
+  const companies = fieldAll(formData, "experience.company");
+  const locations = fieldAll(formData, "experience.location");
+  const startDates = fieldAll(formData, "experience.startDate");
+  const endDates = fieldAll(formData, "experience.endDate");
+  const bullets = fieldAll(formData, "experience.bullets");
+
+  return titles.map((title, i) => ({
+    title,
+    company: companies[i] ?? "",
+    location: locations[i] ?? "",
+    startDate: startDates[i] ?? "",
+    endDate: endDates[i] ?? "",
+    bullets: (bullets[i] ?? "")
+      .split("\n")
+      .map((b) => b.trim())
+      .filter(Boolean),
+  }));
+}
+
+function parseEducationRows(formData: FormData) {
+  const schools = fieldAll(formData, "education.school");
+  const degrees = fieldAll(formData, "education.degree");
+  const fields = fieldAll(formData, "education.field");
+  const startDates = fieldAll(formData, "education.startDate");
+  const endDates = fieldAll(formData, "education.endDate");
+
+  return schools.map((school, i) => ({
+    school,
+    degree: degrees[i] ?? "",
+    field: fields[i] ?? "",
+    startDate: startDates[i] ?? "",
+    endDate: endDates[i] ?? "",
+  }));
 }
 
 export async function updateResumeStructuredAction(
@@ -146,11 +158,8 @@ export async function updateResumeStructuredAction(
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const experienceCount = Number(formData.get("experienceCount") ?? 0);
-  const educationCount = Number(formData.get("educationCount") ?? 0);
-
-  const experienceRows = parseExperienceRows(formData, experienceCount);
-  const educationRows = parseEducationRows(formData, educationCount);
+  const experienceRows = parseExperienceRows(formData);
+  const educationRows = parseEducationRows(formData);
 
   const skills = field(formData, "skills")
     .split(",")

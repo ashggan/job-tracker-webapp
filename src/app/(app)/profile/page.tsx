@@ -15,12 +15,9 @@ export default async function ProfilePage() {
     where: { userId: session.user.id },
   });
 
-  const resumeDownloadUrl = profile?.resumeFileUrl
-    ? await getResumeDownloadUrl(profile.resumeFileUrl)
-    : null;
-  const resumeFilename = profile?.resumeFileUrl
-    ? resumeFilenameFromKey(profile.resumeFileUrl)
-    : null;
+  const resumeKey = profile?.resumeFileUrl;
+  const resumeDownloadUrl = resumeKey ? await getResumeDownloadUrl(resumeKey) : null;
+  const resumeFilename = resumeKey ? resumeFilenameFromKey(resumeKey) : null;
 
   const complete = isProfileComplete(profile);
 

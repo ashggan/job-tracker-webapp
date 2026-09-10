@@ -1,33 +1,18 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { SubmitButton } from "@/components/submit-button";
 import { updateResumeStructuredAction } from "@/lib/actions/profile";
 import type { ResumeStructured } from "@/lib/profile";
 
-let rowId = 0;
-function nextId() {
-  rowId += 1;
-  return rowId;
-}
-
 const EMPTY_EXPERIENCE = { title: "", company: "", location: "", startDate: "", endDate: "", bullets: [] as string[] };
 const EMPTY_EDUCATION = { school: "", degree: "", field: "", startDate: "", endDate: "" };
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="sm" disabled={pending}>
-      {pending ? "Saving…" : "Save resume details"}
-    </Button>
-  );
-}
 
 function FieldRow({ label, name, defaultValue }: { label: string; name: string; defaultValue?: string }) {
   return (
@@ -44,13 +29,13 @@ export function ResumeStructuredForm({ initial }: { initial: ResumeStructured })
   const [state, formAction] = useActionState(updateResumeStructuredAction, undefined);
   const [experience, setExperience] = useState(() =>
     (initial.experience.length ? initial.experience : [EMPTY_EXPERIENCE]).map((row) => ({
-      id: nextId(),
+      id: crypto.randomUUID(),
       ...row,
     }))
   );
   const [education, setEducation] = useState(() =>
     (initial.education.length ? initial.education : [EMPTY_EDUCATION]).map((row) => ({
-      id: nextId(),
+      id: crypto.randomUUID(),
       ...row,
     }))
   );
@@ -65,9 +50,6 @@ export function ResumeStructuredForm({ initial }: { initial: ResumeStructured })
       </CardHeader>
       <CardContent>
         <form action={formAction} className="flex flex-col gap-6">
-          <input type="hidden" name="experienceCount" value={experience.length} />
-          <input type="hidden" name="educationCount" value={education.length} />
-
           <div className="grid grid-cols-2 gap-3">
             <FieldRow label="Name" name="contactName" defaultValue={initial.contact.name} />
             <FieldRow label="Email" name="contactEmail" defaultValue={initial.contact.email} />
@@ -103,23 +85,25 @@ export function ResumeStructuredForm({ initial }: { initial: ResumeStructured })
                 type="button"
                 variant="ghost"
                 size="xs"
-                onClick={() => setExperience((rows) => [...rows, { id: nextId(), ...EMPTY_EXPERIENCE }])}
+                onClick={() =>
+                  setExperience((rows) => [...rows, { id: crypto.randomUUID(), ...EMPTY_EXPERIENCE }])
+                }
               >
                 <Plus className="size-3.5" /> Add
               </Button>
             </div>
-            {experience.map((row, i) => (
+            {experience.map((row) => (
               <div key={row.id} className="flex items-start gap-2 rounded-lg border border-border p-3.5">
                 <div className="grid flex-1 grid-cols-2 gap-2">
-                  <Input name={`experience.${i}.title`} placeholder="Title" defaultValue={row.title} />
-                  <Input name={`experience.${i}.company`} placeholder="Company" defaultValue={row.company} />
-                  <Input name={`experience.${i}.location`} placeholder="Location" defaultValue={row.location} />
+                  <Input name="experience.title" placeholder="Title" defaultValue={row.title} />
+                  <Input name="experience.company" placeholder="Company" defaultValue={row.company} />
+                  <Input name="experience.location" placeholder="Location" defaultValue={row.location} />
                   <div className="flex gap-2">
-                    <Input name={`experience.${i}.startDate`} placeholder="Start" defaultValue={row.startDate} />
-                    <Input name={`experience.${i}.endDate`} placeholder="End / Present" defaultValue={row.endDate} />
+                    <Input name="experience.startDate" placeholder="Start" defaultValue={row.startDate} />
+                    <Input name="experience.endDate" placeholder="End / Present" defaultValue={row.endDate} />
                   </div>
                   <Textarea
-                    name={`experience.${i}.bullets`}
+                    name="experience.bullets"
                     rows={3}
                     placeholder="One bullet per line"
                     defaultValue={row.bullets.join("\n")}
@@ -148,20 +132,22 @@ export function ResumeStructuredForm({ initial }: { initial: ResumeStructured })
                 type="button"
                 variant="ghost"
                 size="xs"
-                onClick={() => setEducation((rows) => [...rows, { id: nextId(), ...EMPTY_EDUCATION }])}
+                onClick={() =>
+                  setEducation((rows) => [...rows, { id: crypto.randomUUID(), ...EMPTY_EDUCATION }])
+                }
               >
                 <Plus className="size-3.5" /> Add
               </Button>
             </div>
-            {education.map((row, i) => (
+            {education.map((row) => (
               <div key={row.id} className="flex items-start gap-2 rounded-lg border border-border p-3.5">
                 <div className="grid flex-1 grid-cols-2 gap-2">
-                  <Input name={`education.${i}.school`} placeholder="School" defaultValue={row.school} />
-                  <Input name={`education.${i}.degree`} placeholder="Degree" defaultValue={row.degree} />
-                  <Input name={`education.${i}.field`} placeholder="Field of study" defaultValue={row.field} />
+                  <Input name="education.school" placeholder="School" defaultValue={row.school} />
+                  <Input name="education.degree" placeholder="Degree" defaultValue={row.degree} />
+                  <Input name="education.field" placeholder="Field of study" defaultValue={row.field} />
                   <div className="flex gap-2">
-                    <Input name={`education.${i}.startDate`} placeholder="Start" defaultValue={row.startDate} />
-                    <Input name={`education.${i}.endDate`} placeholder="End" defaultValue={row.endDate} />
+                    <Input name="education.startDate" placeholder="Start" defaultValue={row.startDate} />
+                    <Input name="education.endDate" placeholder="End" defaultValue={row.endDate} />
                   </div>
                 </div>
                 <Button
@@ -183,7 +169,9 @@ export function ResumeStructuredForm({ initial }: { initial: ResumeStructured })
             </p>
           )}
           <div>
-            <SubmitButton />
+            <SubmitButton size="sm" pendingLabel="Saving…">
+              Save resume details
+            </SubmitButton>
           </div>
         </form>
       </CardContent>
