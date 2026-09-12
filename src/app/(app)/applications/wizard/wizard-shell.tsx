@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "cn";
 import { StepPosting } from "./step-posting";
+import { StepReview } from "./step-review";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 
 const STEPS = ["Posting", "Review"] as const;
@@ -34,10 +35,7 @@ export function WizardShell() {
       )}
 
       {step === "review" && extracted && (
-        <p className="text-sm text-muted-foreground">
-          Got it — pulled &ldquo;{extracted.jobTitle}&rdquo; at {extracted.company}. The review
-          step ships in an upcoming update.
-        </p>
+        <StepReview extracted={extracted} onBack={() => setStep("posting")} />
       )}
     </div>
   );
