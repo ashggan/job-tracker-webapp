@@ -20,7 +20,7 @@ export type TableFilters = {
   fitLabel?: FitLabel;
   source?: string;
   days?: number;
-  sort?: "dateApplied" | "jobTitle" | "company" | "fitScore" | "stage";
+  sort?: "dateApplied" | "jobTitle" | "company" | "fitScore" | "stage" | "deadline";
   dir?: "asc" | "desc";
 };
 
@@ -52,7 +52,9 @@ export async function getTableRows(userId: string, filters: TableFilters) {
           ? { company: dir }
           : sortField === "fitScore"
             ? { fitScore: dir }
-            : { stage: dir };
+            : sortField === "deadline"
+              ? { deadline: dir }
+              : { stage: dir };
 
   return prisma.application.findMany({
     where,

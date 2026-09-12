@@ -12,7 +12,8 @@ import { FitBadge } from "@/components/fit-badge";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 import { auth } from "@/lib/auth";
 import { getTableRows, getDistinctSources, type TableFilters as Filters } from "@/lib/queries/applications";
-import { STAGE_LABELS } from "@/lib/stages";
+import { STAGE_LABELS, isDueSoon } from "@/lib/stages";
+import { cn } from "cn";
 import { TableFilters } from "./table-filters";
 import type { Stage, FitLabel } from "@prisma/client";
 
@@ -94,6 +95,7 @@ export default async function TablePage({
               <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Location</TableHead>
               {(
                 [
+                  ["deadline", "Deadline"],
                   ["fitScore", "Fit"],
                   ["stage", "Status"],
                 ] as const
@@ -112,7 +114,7 @@ export default async function TablePage({
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={12} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={13} className="py-10 text-center text-sm text-muted-foreground">
                   No applications match these filters.
                 </TableCell>
               </TableRow>
@@ -137,6 +139,12 @@ export default async function TablePage({
                   )}
                 </TableCell>
                 <TableCell>{row.location || "—"}</TableCell>
+                <TableCell
+                  className={cn(isDueSoon(row.deadline) && "font-semibold text-destructive")}
+                >
+                  {row.deadline ? row.deadline.toLocaleDateString() : "—"}
+                  {isDueSoon(row.deadline) && " · Due soon"}
+                </TableCell>
                 <TableCell>
                   <FitBadge label={row.fitLabel} />
                 </TableCell>

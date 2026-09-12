@@ -33,3 +33,13 @@ export function daysSince(date: Date): number {
   const ms = Date.now() - date.getTime();
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
 }
+
+const DUE_SOON_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+// True for a deadline that's still ahead but within the next 3 days —
+// doesn't flag one that's already passed, since that's a different signal.
+export function isDueSoon(deadline: Date | null): boolean {
+  if (!deadline) return false;
+  const msUntil = deadline.getTime() - Date.now();
+  return msUntil >= 0 && msUntil <= DUE_SOON_WINDOW_MS;
+}
