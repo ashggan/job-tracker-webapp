@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { fetchPostingText, extractPostingDetails, type ExtractedPosting } from "@/lib/ai/extract-posting";
+import { findDuplicateApplications, type DuplicateMatch } from "@/lib/duplicate-check";
 
 export type ExtractPostingActionResult =
   | { ok: true; data: ExtractedPosting }
@@ -35,4 +36,20 @@ export async function extractPostingAction(input: {
   }
 
   return extractPostingDetails(session.user.id, sourceText);
+}
+
+export type CheckDuplicatesActionResult =
+  | { ok: true; data: DuplicateMatch[] }
+  | { ok: false; error: string };
+
+export async function checkDuplicatesAction(input: {
+  postingUrl?: string;
+  jobTitle: string;
+  company: string;
+}): Promise<CheckDuplicatesActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Sign in to use this feature" };
+
+  const data = await findDuplicateApplications(session.user.id, input);
+  return { ok: true, data };
 }

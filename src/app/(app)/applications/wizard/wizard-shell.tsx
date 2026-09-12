@@ -4,16 +4,19 @@ import { useState } from "react";
 import { cn } from "cn";
 import { StepPosting } from "./step-posting";
 import { StepReview } from "./step-review";
+import { StepDuplicateCheck } from "./step-duplicate-check";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 
-const STEPS = ["Posting", "Review"] as const;
-type Step = "posting" | "review";
+const STEPS = ["Posting", "Review", "Check"] as const;
+const STEP_KEYS = ["posting", "review", "duplicate"] as const;
+type Step = (typeof STEP_KEYS)[number];
 
 export function WizardShell() {
   const [step, setStep] = useState<Step>("posting");
+  const [postingUrl, setPostingUrl] = useState<string | undefined>();
   const [extracted, setExtracted] = useState<ExtractedPosting | null>(null);
 
-  const stepIndex = step === "posting" ? 0 : 1;
+  const stepIndex = STEP_KEYS.indexOf(step);
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,7 +30,8 @@ export function WizardShell() {
 
       {step === "posting" && (
         <StepPosting
-          onExtracted={(_postingUrl, data) => {
+          onExtracted={(url, data) => {
+            setPostingUrl(url);
             setExtracted(data);
             setStep("review");
           }}
@@ -35,7 +39,26 @@ export function WizardShell() {
       )}
 
       {step === "review" && extracted && (
-        <StepReview extracted={extracted} onBack={() => setStep("posting")} />
+        <StepReview
+          extracted={extracted}
+          onBack={() => setStep("posting")}
+          onContinue={(reviewed) => {
+            setExtracted(reviewed);
+            setStep("duplicate");
+          }}
+        />
+      )}
+
+      {step === "duplicate" && extracted && (
+        <StepDuplicateCheck
+          postingUrl={postingUrl}
+          jobTitle={extracted.jobTitle}
+          company={extracted.company}
+          onBack={() => setStep("review")}
+          onContinue={() => {
+            // Fit-scoring step (plan PR #7) wires in here next.
+          }}
+        />
       )}
     </div>
   );
