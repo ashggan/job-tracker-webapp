@@ -1,11 +1,21 @@
 "use server";
 
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { fetchPostingText, extractPostingDetails, type ExtractedPosting } from "@/lib/ai/extract-posting";
 import { findDuplicateApplications, type DuplicateMatch } from "@/lib/duplicate-check";
-import { scoreFit, type ScoreFitResult, type ScoreFitInput } from "@/lib/ai/score-fit";
-import { tailorCv, tailorCoverLetter, type TailorCvResult, type TailorCoverLetterResult } from "@/lib/ai/tailor-cv";
+import { scoreFit, type ScoreFitResult, type ScoreFitInput, type FitScore } from "@/lib/ai/score-fit";
+import {
+  tailorCv,
+  tailorCoverLetter,
+  type TailorCvResult,
+  type TailorCoverLetterResult,
+  type TailoredCv,
+  type TailoredCoverLetter,
+} from "@/lib/ai/tailor-cv";
 import { renderTailoredDocumentDocx } from "@/lib/docx-export";
 import type { TailoredKind } from "@prisma/client";
 
@@ -101,4 +111,72 @@ export async function renderMaterialDocxAction(input: {
     console.error("[renderMaterialDocxAction]", error);
     return { ok: false, error: "Couldn't generate that document" };
   }
+}
+
+export type SaveApplicationInput = {
+  postingUrl?: string;
+  extracted: ExtractedPosting;
+  fit: FitScore | null;
+  cv: TailoredCv | null;
+  coverLetter: TailoredCoverLetter | null;
+};
+
+export async function createApplicationFromWizardAction(
+  input: SaveApplicationInput
+): Promise<{ error: string } | undefined> {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const application = await tx.application.create({
+        data: {
+          userId,
+          jobTitle: input.extracted.jobTitle,
+          company: input.extracted.company,
+          postingUrl: input.postingUrl,
+          source: "guided",
+          descriptionText: input.extracted.description,
+          requirements: input.extracted.requirements,
+          niceToHaves: input.extracted.niceToHaves,
+          deadline: input.extracted.deadline ? new Date(input.extracted.deadline) : null,
+          stage: "wishlist",
+          fitScore: input.fit?.fitScore,
+          fitLabel: input.fit?.fitLabel,
+          fitStrengths: input.fit?.fitStrengths,
+          fitGaps: input.fit?.fitGaps,
+          fitRecommendation: input.fit?.fitRecommendation,
+          fitGeneratedAt: input.fit ? new Date() : null,
+        },
+      });
+
+      await tx.stageEvent.create({
+        data: { applicationId: application.id, fromStage: null, toStage: "wishlist" },
+      });
+
+      if (input.cv) {
+        await tx.tailoredDocument.create({
+          data: { applicationId: application.id, kind: "cv", version: 1, contentJson: input.cv },
+        });
+      }
+      if (input.coverLetter) {
+        await tx.tailoredDocument.create({
+          data: {
+            applicationId: application.id,
+            kind: "cover_letter",
+            version: 1,
+            contentJson: input.coverLetter,
+          },
+        });
+      }
+    });
+  } catch (error) {
+    console.error("[createApplicationFromWizardAction]", error);
+    return { error: "Couldn't save this application — try again in a moment" };
+  }
+
+  revalidatePath("/board");
+  revalidatePath("/table");
+  redirect("/board");
 }

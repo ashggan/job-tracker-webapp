@@ -7,16 +7,22 @@ import { StepReview } from "./step-review";
 import { StepDuplicateCheck } from "./step-duplicate-check";
 import { StepFitScore } from "./step-fit-score";
 import { StepMaterials } from "./step-materials";
+import { StepSave } from "./step-save";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
+import type { FitScore } from "@/lib/ai/score-fit";
+import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
 
-const STEPS = ["Posting", "Review", "Check", "Fit", "Materials"] as const;
-const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials"] as const;
+const STEPS = ["Posting", "Review", "Check", "Fit", "Materials", "Save"] as const;
+const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials", "save"] as const;
 type Step = (typeof STEP_KEYS)[number];
 
 export function WizardShell() {
   const [step, setStep] = useState<Step>("posting");
   const [postingUrl, setPostingUrl] = useState<string | undefined>();
   const [extracted, setExtracted] = useState<ExtractedPosting | null>(null);
+  const [fit, setFit] = useState<FitScore | null>(null);
+  const [cv, setCv] = useState<TailoredCv | null>(null);
+  const [coverLetter, setCoverLetter] = useState<TailoredCoverLetter | null>(null);
 
   const stepIndex = STEP_KEYS.indexOf(step);
 
@@ -65,7 +71,10 @@ export function WizardShell() {
         <StepFitScore
           extracted={extracted}
           onBack={() => setStep("duplicate")}
-          onContinue={() => setStep("materials")}
+          onContinue={(scored) => {
+            setFit(scored);
+            setStep("materials");
+          }}
         />
       )}
 
@@ -73,9 +82,22 @@ export function WizardShell() {
         <StepMaterials
           extracted={extracted}
           onBack={() => setStep("fit")}
-          onContinue={() => {
-            // Save & track step (plan PR #11) wires in here next.
+          onContinue={(materials) => {
+            setCv(materials.cv);
+            setCoverLetter(materials.coverLetter);
+            setStep("save");
           }}
+        />
+      )}
+
+      {step === "save" && extracted && (
+        <StepSave
+          postingUrl={postingUrl}
+          extracted={extracted}
+          fit={fit}
+          cv={cv}
+          coverLetter={coverLetter}
+          onBack={() => setStep("materials")}
         />
       )}
     </div>
