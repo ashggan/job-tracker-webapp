@@ -236,18 +236,13 @@ enum AIAction {
   extract_listing
 }
 
-enum KeySource {
-  shared_default
-  own_key
-}
-
 model AIUsageLog {
   id           String      @id @default(cuid())
   userId       String
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   action       AIAction
   provider     LlmProvider
-  keySource    KeySource
+  tokensUsed   Int         @default(0)
   costEstimate Float
   createdAt    DateTime    @default(now())
 
