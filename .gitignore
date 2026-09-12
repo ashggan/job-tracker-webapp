@@ -47,3 +47,4 @@ next-env.d.ts
 
 # Kept locally, untracked from master (CLAUDE.md docs cleanup).
 /SPEC.md
+/DESIGN_PROMPT.md
