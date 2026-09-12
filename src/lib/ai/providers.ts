@@ -18,7 +18,7 @@ export const PROVIDER_LABELS: Record<SupportedProvider, string> = {
 const DEFAULT_MODEL: Record<SupportedProvider, string> = {
   anthropic: "claude-haiku-4-5",
   openai: "gpt-4o-mini",
-  google: "gemini-2.0-flash",
+  google: "gemini-3.6-flash",
 };
 
 function isSupportedProvider(provider: LlmProvider): provider is SupportedProvider {
@@ -54,18 +54,28 @@ export async function validateProviderKey(
 
   try {
     const model = getLanguageModel(provider, apiKey);
-    await generateText({ model, prompt: "Reply with the single word OK.", maxOutputTokens: 5 });
+    await generateText({
+      model,
+      prompt: "Reply with the single word OK.",
+      maxOutputTokens: 5,
+      abortSignal: AbortSignal.timeout(10_000),
+    });
     return { valid: true };
   } catch (error) {
     if (APICallError.isInstance(error)) {
+      console.error(
+        `[validateProviderKey] ${provider} ${error.statusCode ?? "?"}: ${error.message}`,
+        error.responseBody
+      );
       if (error.statusCode === 401 || error.statusCode === 403) {
         return { valid: false, error: "That key was rejected — check it and try again" };
       }
       return {
         valid: false,
-        error: `Couldn't validate the key (${error.statusCode ?? "error"}) — try again`,
+        error: `Couldn't validate the key (${error.statusCode ?? "error"}): ${error.message}`,
       };
     }
+    console.error(`[validateProviderKey] ${provider} non-API-call error:`, error);
     return { valid: false, error: "Couldn't reach the provider to validate the key — try again" };
   }
 }
