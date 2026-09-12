@@ -132,11 +132,15 @@ model Application {
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  jobTitle    String
-  company     String
-  postingUrl  String?
-  location    String?
-  source      String   // aggregated board name, or "manual"
+  jobTitle       String
+  company        String
+  postingUrl     String?
+  location       String?
+  source         String   // aggregated board name, or "manual"
+  descriptionText String? @db.Text // full posting text, from guided-add extraction
+  requirements   Json?    // string[] — required quals, as extracted
+  niceToHaves    Json?    // string[]
+  deadline       DateTime? // null if the posting didn't state one
 
   rawListingId String?
   rawListing   RawListing? @relation(fields: [rawListingId], references: [id], onDelete: SetNull)
@@ -145,11 +149,12 @@ model Application {
   dateFound   DateTime @default(now())
   dateApplied DateTime?
 
-  fitScore        Int?
-  fitLabel        FitLabel?
-  fitStrengths    String?   @db.Text
-  fitGaps         String?   @db.Text
-  fitGeneratedAt  DateTime?
+  fitScore          Int?
+  fitLabel          FitLabel?
+  fitStrengths      Json?     // string[] — specific, tied to requirement items
+  fitGaps           Json?     // string[]
+  fitRecommendation String?   @db.Text // plain-language line, e.g. "7/10 — worth tailoring"
+  fitGeneratedAt    DateTime?
 
   interviewPrepNotes String? @db.Text
 
@@ -162,6 +167,7 @@ model Application {
   stageEvents        StageEvent[]
 
   @@index([userId, stage])
+  @@index([userId, postingUrl])
 }
 
 model Note {
