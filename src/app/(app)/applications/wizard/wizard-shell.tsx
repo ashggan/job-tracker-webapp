@@ -6,10 +6,11 @@ import { StepPosting } from "./step-posting";
 import { StepReview } from "./step-review";
 import { StepDuplicateCheck } from "./step-duplicate-check";
 import { StepFitScore } from "./step-fit-score";
+import { StepMaterials } from "./step-materials";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 
-const STEPS = ["Posting", "Review", "Check", "Fit"] as const;
-const STEP_KEYS = ["posting", "review", "duplicate", "fit"] as const;
+const STEPS = ["Posting", "Review", "Check", "Fit", "Materials"] as const;
+const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials"] as const;
 type Step = (typeof STEP_KEYS)[number];
 
 export function WizardShell() {
@@ -64,8 +65,16 @@ export function WizardShell() {
         <StepFitScore
           extracted={extracted}
           onBack={() => setStep("duplicate")}
+          onContinue={() => setStep("materials")}
+        />
+      )}
+
+      {step === "materials" && extracted && (
+        <StepMaterials
+          extracted={extracted}
+          onBack={() => setStep("fit")}
           onContinue={() => {
-            // Materials-tailoring step (plan PR #10) wires in here next.
+            // Save & track step (plan PR #11) wires in here next.
           }}
         />
       )}
