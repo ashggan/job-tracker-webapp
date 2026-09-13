@@ -40,6 +40,32 @@ describe("findDuplicateApplications", () => {
     expect(findMany).toHaveBeenCalledTimes(1);
   });
 
+  it("does not treat two different postings on the same generic ATS path as duplicates", async () => {
+    // Indeed-style URLs put the actual job id in a query param, not the
+    // path — stripping the whole query string used to collapse these to
+    // the same normalized key.
+    findMany
+      .mockResolvedValueOnce([
+        {
+          id: "1",
+          company: "Acme",
+          jobTitle: "Engineer",
+          stage: "wishlist",
+          createdAt: new Date(),
+          postingUrl: "https://www.indeed.com/viewjob?jk=aaaa1111",
+        },
+      ] as never)
+      .mockResolvedValueOnce([]); // fallback company+title query also finds nothing
+
+    const result = await findDuplicateApplications("user1", {
+      postingUrl: "https://indeed.com/viewjob?jk=bbbb2222",
+      company: "Other Co",
+      jobTitle: "Designer",
+    });
+
+    expect(result).toHaveLength(0);
+  });
+
   it("falls back to a case-insensitive, trimmed company+title match on a repost (different URL)", async () => {
     findMany
       .mockResolvedValueOnce([]) // no URL match
