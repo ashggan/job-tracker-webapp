@@ -16,13 +16,40 @@ const STEPS = ["Posting", "Review", "Check", "Fit", "Materials", "Save"] as cons
 const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials", "save"] as const;
 type Step = (typeof STEP_KEYS)[number];
 
+// Fields a step generates via AI and can legitimately come back without
+// (skipped, or re-fetched on remount and not yet resolved/failed) — as
+// opposed to postingUrl/extracted, which a step only ever hands back
+// complete. Steps update this only through mergeGenerated below, so a
+// null/absent field from a re-visited step can never erase a value a
+// previous visit already produced.
+type GeneratedState = {
+  fit: FitScore | null;
+  cv: TailoredCv | null;
+  coverLetter: TailoredCoverLetter | null;
+};
+
 export function WizardShell() {
   const [step, setStep] = useState<Step>("posting");
   const [postingUrl, setPostingUrl] = useState<string | undefined>();
   const [extracted, setExtracted] = useState<ExtractedPosting | null>(null);
-  const [fit, setFit] = useState<FitScore | null>(null);
-  const [cv, setCv] = useState<TailoredCv | null>(null);
-  const [coverLetter, setCoverLetter] = useState<TailoredCoverLetter | null>(null);
+  const [generated, setGenerated] = useState<GeneratedState>({
+    fit: null,
+    cv: null,
+    coverLetter: null,
+  });
+
+  function mergeGenerated(patch: Partial<GeneratedState>) {
+    setGenerated((prev) => {
+      const next = { ...prev };
+      (Object.keys(patch) as (keyof GeneratedState)[]).forEach((key) => {
+        const value = patch[key];
+        // Safe: value always came from patch[key] for this same key — TS
+        // just can't verify that correlation through a generic keyof loop.
+        if (value != null) (next as Record<keyof GeneratedState, unknown>)[key] = value;
+      });
+      return next;
+    });
+  }
 
   const stepIndex = STEP_KEYS.indexOf(step);
 
@@ -72,7 +99,7 @@ export function WizardShell() {
           extracted={extracted}
           onBack={() => setStep("duplicate")}
           onContinue={(scored) => {
-            setFit(scored);
+            mergeGenerated({ fit: scored });
             setStep("materials");
           }}
         />
@@ -83,8 +110,7 @@ export function WizardShell() {
           extracted={extracted}
           onBack={() => setStep("fit")}
           onContinue={(materials) => {
-            setCv(materials.cv);
-            setCoverLetter(materials.coverLetter);
+            mergeGenerated({ cv: materials.cv, coverLetter: materials.coverLetter });
             setStep("save");
           }}
         />
@@ -94,9 +120,9 @@ export function WizardShell() {
         <StepSave
           postingUrl={postingUrl}
           extracted={extracted}
-          fit={fit}
-          cv={cv}
-          coverLetter={coverLetter}
+          fit={generated.fit}
+          cv={generated.cv}
+          coverLetter={generated.coverLetter}
           onBack={() => setStep("materials")}
         />
       )}
