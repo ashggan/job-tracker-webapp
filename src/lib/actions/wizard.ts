@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { fetchPostingText, extractPostingDetails, type ExtractedPosting } from "@/lib/ai/extract-posting";
 import { findDuplicateApplications, type DuplicateMatch } from "@/lib/duplicate-check";
+import { scoreFit, type ScoreFitResult } from "@/lib/ai/score-fit";
 
 export type ExtractPostingActionResult =
   | { ok: true; data: ExtractedPosting }
@@ -52,4 +53,17 @@ export async function checkDuplicatesAction(input: {
 
   const data = await findDuplicateApplications(session.user.id, input);
   return { ok: true, data };
+}
+
+export async function scoreFitAction(input: {
+  jobTitle: string;
+  company: string;
+  descriptionText: string;
+  requirements: string[];
+  niceToHaves: string[];
+}): Promise<ScoreFitResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Sign in to use this feature" };
+
+  return scoreFit(session.user.id, input);
 }
