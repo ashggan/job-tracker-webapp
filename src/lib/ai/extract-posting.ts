@@ -77,12 +77,12 @@ export async function extractPostingDetails(
   userId: string,
   sourceText: string
 ): Promise<ExtractPostingResult> {
-  const resolved = await resolveActiveKey(userId);
-  if (!resolved) {
-    return { ok: false, error: "Add an API key in Settings before using this feature" };
-  }
-
   try {
+    const resolved = await resolveActiveKey(userId);
+    if (!resolved) {
+      return { ok: false, error: "Add an API key in Settings before using this feature" };
+    }
+
     const model = getLanguageModel(resolved.provider, resolved.apiKey);
     const { object, usage } = await generateObject({
       model,
