@@ -16,7 +16,7 @@ export type ExtractedJobMeta = {
   location?: string;
 };
 
-function isFetchableUrl(url: string): boolean {
+export function isFetchableUrl(url: string): boolean {
   let parsed: URL;
   try {
     parsed = new URL(url);
