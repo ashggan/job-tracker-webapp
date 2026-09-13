@@ -38,41 +38,41 @@ export async function scoreFit(
   userId: string,
   posting: ScoreFitInput
 ): Promise<ScoreFitResult> {
-  const resolved = await resolveActiveKey(userId);
-  if (!resolved) {
-    return { ok: false, error: "Add an API key in Settings before using this feature" };
-  }
-
-  const profile = await prisma.userProfile.findUnique({ where: { userId } });
-  const hasResume = profile?.resumeStructured != null;
-  const hasPreferences = !!profile?.preferencesText?.trim();
-  if (!hasResume && !hasPreferences) {
-    return {
-      ok: false,
-      error: "Complete your profile (resume or preferences) before scoring fit",
-    };
-  }
-
-  const candidateContext = [
-    hasResume ? `Candidate resume (structured):\n${JSON.stringify(profile!.resumeStructured)}` : null,
-    hasPreferences ? `Candidate preferences/notes:\n${profile!.preferencesText}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-
-  const jobContext = [
-    `Job title: ${posting.jobTitle}`,
-    `Company: ${posting.company}`,
-    `Description: ${posting.descriptionText}`,
-    `Requirements:\n${posting.requirements.map((r) => `- ${r}`).join("\n")}`,
-    posting.niceToHaves.length
-      ? `Nice to have:\n${posting.niceToHaves.map((n) => `- ${n}`).join("\n")}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-
   try {
+    const resolved = await resolveActiveKey(userId);
+    if (!resolved) {
+      return { ok: false, error: "Add an API key in Settings before using this feature" };
+    }
+
+    const profile = await prisma.userProfile.findUnique({ where: { userId } });
+    const hasResume = profile?.resumeStructured != null;
+    const hasPreferences = !!profile?.preferencesText?.trim();
+    if (!hasResume && !hasPreferences) {
+      return {
+        ok: false,
+        error: "Complete your profile (resume or preferences) before scoring fit",
+      };
+    }
+
+    const candidateContext = [
+      hasResume ? `Candidate resume (structured):\n${JSON.stringify(profile!.resumeStructured)}` : null,
+      hasPreferences ? `Candidate preferences/notes:\n${profile!.preferencesText}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const jobContext = [
+      `Job title: ${posting.jobTitle}`,
+      `Company: ${posting.company}`,
+      `Description: ${posting.descriptionText}`,
+      `Requirements:\n${posting.requirements.map((r) => `- ${r}`).join("\n")}`,
+      posting.niceToHaves.length
+        ? `Nice to have:\n${posting.niceToHaves.map((n) => `- ${n}`).join("\n")}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
     const model = getLanguageModel(resolved.provider, resolved.apiKey);
     const { object, usage } = await generateObject({
       model,
