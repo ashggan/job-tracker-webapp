@@ -14,7 +14,9 @@ const ROUGH_COST_PER_1M_TOKENS: Record<string, number> = {
   google: 1,
 };
 
-const tailoredCvSchema = z.object({
+// Exported so consumers of stored contentJson (e.g. docx-export.ts) can
+// validate it at the same shape these functions produce.
+export const tailoredCvSchema = z.object({
   summary: z.string(), // 2-3 sentence professional summary, tailored to this posting
   experienceBullets: z.array(z.string()), // rewritten/prioritized to foreground fit
   skills: z.array(z.string()),
@@ -23,7 +25,7 @@ const tailoredCvSchema = z.object({
 export type TailoredCv = z.infer<typeof tailoredCvSchema>;
 export type TailorCvResult = { ok: true; data: TailoredCv } | { ok: false; error: string };
 
-const coverLetterSchema = z.object({
+export const coverLetterSchema = z.object({
   body: z.string(), // full cover letter text, 3-4 short paragraphs
 });
 
