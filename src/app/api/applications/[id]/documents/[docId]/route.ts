@@ -29,17 +29,22 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const buffer = await renderTailoredDocumentDocx(document.kind, document.contentJson);
-  const kindLabel = document.kind === "cv" ? "CV" : "Cover Letter";
-  const filename = `${application.company} - ${kindLabel} - ${application.jobTitle}.docx`.replace(
-    /[/\\?%*:|"<>]/g,
-    "-"
-  );
+  try {
+    const buffer = await renderTailoredDocumentDocx(document.kind, document.contentJson);
+    const kindLabel = document.kind === "cv" ? "CV" : "Cover Letter";
+    const filename = `${application.company} - ${kindLabel} - ${application.jobTitle}.docx`.replace(
+      /[/\\?%*:|"<>]/g,
+      "-"
+    );
 
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
-  });
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
+  } catch (error) {
+    console.error("[GET /api/applications/[id]/documents/[docId]]", error);
+    return NextResponse.json({ error: "Couldn't generate that document" }, { status: 500 });
+  }
 }
