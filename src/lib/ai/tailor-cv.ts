@@ -78,20 +78,20 @@ async function logUsage(
 }
 
 export async function tailorCv(userId: string, posting: ScoreFitInput): Promise<TailorCvResult> {
-  const resolved = await resolveActiveKey(userId);
-  if (!resolved) {
-    return { ok: false, error: "Add an API key in Settings before using this feature" };
-  }
-
-  const candidateContext = await loadCandidateContext(userId);
-  if (!candidateContext) {
-    return {
-      ok: false,
-      error: "Complete your profile (resume or preferences) before tailoring your CV",
-    };
-  }
-
   try {
+    const resolved = await resolveActiveKey(userId);
+    if (!resolved) {
+      return { ok: false, error: "Add an API key in Settings before using this feature" };
+    }
+
+    const candidateContext = await loadCandidateContext(userId);
+    if (!candidateContext) {
+      return {
+        ok: false,
+        error: "Complete your profile (resume or preferences) before tailoring your CV",
+      };
+    }
+
     const model = getLanguageModel(resolved.provider, resolved.apiKey);
     const { object, usage } = await generateObject({
       model,
@@ -120,20 +120,20 @@ export async function tailorCoverLetter(
   userId: string,
   posting: ScoreFitInput
 ): Promise<TailorCoverLetterResult> {
-  const resolved = await resolveActiveKey(userId);
-  if (!resolved) {
-    return { ok: false, error: "Add an API key in Settings before using this feature" };
-  }
-
-  const candidateContext = await loadCandidateContext(userId);
-  if (!candidateContext) {
-    return {
-      ok: false,
-      error: "Complete your profile (resume or preferences) before generating a cover letter",
-    };
-  }
-
   try {
+    const resolved = await resolveActiveKey(userId);
+    if (!resolved) {
+      return { ok: false, error: "Add an API key in Settings before using this feature" };
+    }
+
+    const candidateContext = await loadCandidateContext(userId);
+    if (!candidateContext) {
+      return {
+        ok: false,
+        error: "Complete your profile (resume or preferences) before generating a cover letter",
+      };
+    }
+
     const model = getLanguageModel(resolved.provider, resolved.apiKey);
     const { object, usage } = await generateObject({
       model,
