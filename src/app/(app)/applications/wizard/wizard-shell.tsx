@@ -7,16 +7,49 @@ import { StepReview } from "./step-review";
 import { StepDuplicateCheck } from "./step-duplicate-check";
 import { StepFitScore } from "./step-fit-score";
 import { StepMaterials } from "./step-materials";
+import { StepSave } from "./step-save";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
+import type { FitScore } from "@/lib/ai/score-fit";
+import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
 
-const STEPS = ["Posting", "Review", "Check", "Fit", "Materials"] as const;
-const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials"] as const;
+const STEPS = ["Posting", "Review", "Check", "Fit", "Materials", "Save"] as const;
+const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials", "save"] as const;
 type Step = (typeof STEP_KEYS)[number];
+
+// Fields a step generates via AI and can legitimately come back without
+// (skipped, or re-fetched on remount and not yet resolved/failed) — as
+// opposed to postingUrl/extracted, which a step only ever hands back
+// complete. Steps update this only through mergeGenerated below, so a
+// null/absent field from a re-visited step can never erase a value a
+// previous visit already produced.
+type GeneratedState = {
+  fit: FitScore | null;
+  cv: TailoredCv | null;
+  coverLetter: TailoredCoverLetter | null;
+};
 
 export function WizardShell() {
   const [step, setStep] = useState<Step>("posting");
   const [postingUrl, setPostingUrl] = useState<string | undefined>();
   const [extracted, setExtracted] = useState<ExtractedPosting | null>(null);
+  const [generated, setGenerated] = useState<GeneratedState>({
+    fit: null,
+    cv: null,
+    coverLetter: null,
+  });
+
+  function mergeGenerated(patch: Partial<GeneratedState>) {
+    setGenerated((prev) => {
+      const next = { ...prev };
+      (Object.keys(patch) as (keyof GeneratedState)[]).forEach((key) => {
+        const value = patch[key];
+        // Safe: value always came from patch[key] for this same key — TS
+        // just can't verify that correlation through a generic keyof loop.
+        if (value != null) (next as Record<keyof GeneratedState, unknown>)[key] = value;
+      });
+      return next;
+    });
+  }
 
   const stepIndex = STEP_KEYS.indexOf(step);
 
@@ -65,7 +98,10 @@ export function WizardShell() {
         <StepFitScore
           extracted={extracted}
           onBack={() => setStep("duplicate")}
-          onContinue={() => setStep("materials")}
+          onContinue={(scored) => {
+            mergeGenerated({ fit: scored });
+            setStep("materials");
+          }}
         />
       )}
 
@@ -73,9 +109,21 @@ export function WizardShell() {
         <StepMaterials
           extracted={extracted}
           onBack={() => setStep("fit")}
-          onContinue={() => {
-            // Save & track step (plan PR #11) wires in here next.
+          onContinue={(materials) => {
+            mergeGenerated({ cv: materials.cv, coverLetter: materials.coverLetter });
+            setStep("save");
           }}
+        />
+      )}
+
+      {step === "save" && extracted && (
+        <StepSave
+          postingUrl={postingUrl}
+          extracted={extracted}
+          fit={generated.fit}
+          cv={generated.cv}
+          coverLetter={generated.coverLetter}
+          onBack={() => setStep("materials")}
         />
       )}
     </div>
