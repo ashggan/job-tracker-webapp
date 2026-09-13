@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FitBadge } from "@/components/fit-badge";
 import { createApplicationFromWizardAction } from "@/lib/actions/wizard";
@@ -29,9 +30,17 @@ export function StepSave({
   function handleSave() {
     setError(null);
     startTransition(async () => {
-      const result = await createApplicationFromWizardAction({ postingUrl, extracted, fit, cv, coverLetter });
-      if (result?.error) setError(result.error);
-      // On success the action redirects to /board — nothing else to do here.
+      try {
+        const result = await createApplicationFromWizardAction({ postingUrl, extracted, fit, cv, coverLetter });
+        if (result?.error) setError(result.error);
+        // On success the action redirects to /board — nothing else to do here.
+      } catch (error) {
+        // A successful save's redirect() surfaces here as a rejected promise
+        // (Next.js's client action runtime hands it to RedirectBoundary) —
+        // must not be treated as a real failure.
+        unstable_rethrow(error);
+        setError("Couldn't save this application — try again in a moment");
+      }
     });
   }
 

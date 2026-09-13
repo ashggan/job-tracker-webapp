@@ -121,12 +121,29 @@ export type SaveApplicationInput = {
   coverLetter: TailoredCoverLetter | null;
 };
 
+// The Deadline field in step-review.tsx is freeform text (a placeholder hint,
+// not enforced format), so a value like "ASAP" must be caught here rather
+// than handed to Prisma raw — an invalid Date would otherwise fail the whole
+// save transaction with a generic, unhelpful error.
+function parseDeadline(raw: string | null): { ok: true; value: Date | null } | { ok: false } {
+  if (!raw) return { ok: true, value: null };
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? { ok: false } : { ok: true, value: date };
+}
+
 export async function createApplicationFromWizardAction(
   input: SaveApplicationInput
 ): Promise<{ error: string } | undefined> {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) return { error: "Sign in to use this feature" };
   const userId = session.user.id;
+
+  const deadline = parseDeadline(input.extracted.deadline);
+  if (!deadline.ok) {
+    return {
+      error: "Deadline isn't a valid date — go back to Review and use a format like 2026-12-15, or clear it",
+    };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -140,7 +157,7 @@ export async function createApplicationFromWizardAction(
           descriptionText: input.extracted.description,
           requirements: input.extracted.requirements,
           niceToHaves: input.extracted.niceToHaves,
-          deadline: input.extracted.deadline ? new Date(input.extracted.deadline) : null,
+          deadline: deadline.value,
           stage: "wishlist",
           fitScore: input.fit?.fitScore,
           fitLabel: input.fit?.fitLabel,
