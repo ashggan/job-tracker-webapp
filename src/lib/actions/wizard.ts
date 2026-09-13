@@ -1,0 +1,38 @@
+"use server";
+
+import { auth } from "@/lib/auth";
+import { resolveActiveKey } from "@/lib/ai/keys";
+import { fetchPostingText, extractPostingDetails, type ExtractedPosting } from "@/lib/ai/extract-posting";
+
+export type ExtractPostingActionResult =
+  | { ok: true; data: ExtractedPosting }
+  | { ok: false; error: string };
+
+export async function extractPostingAction(input: {
+  url?: string;
+  pastedText?: string;
+}): Promise<ExtractPostingActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Sign in to use this feature" };
+
+  const resolved = await resolveActiveKey(session.user.id);
+  if (!resolved) {
+    return { ok: false, error: "Add an API key in Settings before using this feature" };
+  }
+
+  let sourceText = input.pastedText?.trim();
+  if (!sourceText && input.url) {
+    sourceText = (await fetchPostingText(input.url)) ?? undefined;
+    if (!sourceText) {
+      return {
+        ok: false,
+        error: "Couldn't read that page — try pasting the job description instead",
+      };
+    }
+  }
+  if (!sourceText) {
+    return { ok: false, error: "Enter a posting link or paste the description" };
+  }
+
+  return extractPostingDetails(session.user.id, sourceText);
+}
