@@ -5,7 +5,7 @@ import { resolveActiveKey } from "@/lib/ai/keys";
 import { fetchPostingText, extractPostingDetails, type ExtractedPosting } from "@/lib/ai/extract-posting";
 import { findDuplicateApplications, type DuplicateMatch } from "@/lib/duplicate-check";
 import { scoreFit, type ScoreFitResult, type ScoreFitInput } from "@/lib/ai/score-fit";
-import { tailorCv, type TailorCvResult } from "@/lib/ai/tailor-cv";
+import { tailorCv, tailorCoverLetter, type TailorCvResult, type TailorCoverLetterResult } from "@/lib/ai/tailor-cv";
 import { renderTailoredDocumentDocx } from "@/lib/docx-export";
 import type { TailoredKind } from "@prisma/client";
 
@@ -70,6 +70,13 @@ export async function tailorCvAction(input: ScoreFitInput): Promise<TailorCvResu
   if (!session?.user?.id) return { ok: false, error: "Sign in to use this feature" };
 
   return tailorCv(session.user.id, input);
+}
+
+export async function tailorCoverLetterAction(input: ScoreFitInput): Promise<TailorCoverLetterResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Sign in to use this feature" };
+
+  return tailorCoverLetter(session.user.id, input);
 }
 
 export type RenderMaterialDocxResult =
