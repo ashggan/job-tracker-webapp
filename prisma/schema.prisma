@@ -21,6 +21,7 @@ model User {
   applications  Application[]
   aiUsageLogs   AIUsageLog[]
   resetTokens   PasswordResetToken[]
+  resume        UserResume?
 }
 
 // Supports the in-app "forgot password" flow (§4). Not one of the spec's
@@ -246,4 +247,32 @@ model AIUsageLog {
   createdAt    DateTime    @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ---------- Resume (§5.10) ----------
+
+enum ResumeFileType {
+  PDF
+  DOCX
+}
+
+enum ResumeParseStatus {
+  OK
+  LOW_CONFIDENCE
+  FAILED
+}
+
+model UserResume {
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalFilename String
+  fileType         ResumeFileType
+  fileBytes        Bytes
+  fileSizeBytes    Int
+  extractedText    String            @db.Text
+  parseStatus      ResumeParseStatus
+  parseWarning     String?
+  uploadedAt       DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
