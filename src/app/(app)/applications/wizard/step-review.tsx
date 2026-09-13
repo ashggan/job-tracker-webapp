@@ -19,9 +19,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function StepReview({
   extracted,
   onBack,
+  onContinue,
 }: {
   extracted: ExtractedPosting;
   onBack: () => void;
+  onContinue: (reviewed: ExtractedPosting) => void;
 }) {
   const [jobTitle, setJobTitle] = useState(extracted.jobTitle);
   const [company, setCompany] = useState(extracted.company);
@@ -67,8 +69,17 @@ export function StepReview({
         <Button
           type="button"
           size="lg"
-          disabled
-          title="Duplicate check and fit scoring ship in an upcoming update"
+          onClick={() =>
+            onContinue({
+              ...extracted,
+              jobTitle,
+              company,
+              description,
+              requirements: requirements.split("\n").map((r) => r.trim()).filter(Boolean),
+              niceToHaves: niceToHaves.split("\n").map((n) => n.trim()).filter(Boolean),
+              deadline: deadline.trim() || null,
+            })
+          }
         >
           Continue
         </Button>
