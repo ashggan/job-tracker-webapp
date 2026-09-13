@@ -9,16 +9,43 @@ export type DuplicateMatch = {
   createdAt: Date;
 };
 
-// Lowercases the host, drops "www.", and strips the entire query string
-// (tracking params like ?utm_source=... are the common case, but any query
-// string is unlikely to be part of a job posting's real identity) and any
-// trailing slash. Returns null for a URL that can't be parsed at all.
+// Known tracking params only — NOT a blanket query-string strip. Several ATS
+// platforms encode the actual job/requisition id in a query param on an
+// otherwise-generic path (Indeed ?jk=, Greenhouse ?gh_jid=, LinkedIn
+// ?currentJobId=, Workday ?jobId=); stripping the whole query string made
+// unrelated postings on the same board collapse to the same normalized key.
+const TRACKING_PARAMS = new Set([
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "ref",
+  "referrer",
+  "source",
+  "fbclid",
+  "gclid",
+  "mc_cid",
+  "mc_eid",
+]);
+
+// Lowercases the host, drops "www.", strips known tracking params (sorted so
+// param order doesn't cause a false negative) and any trailing slash.
+// Returns null for a URL that can't be parsed at all.
 function normalizeUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
     const path = parsed.pathname.replace(/\/+$/, "");
-    return `${host}${path}`;
+
+    const params = new URLSearchParams(parsed.search);
+    for (const key of [...params.keys()]) {
+      if (TRACKING_PARAMS.has(key.toLowerCase())) params.delete(key);
+    }
+    params.sort();
+    const query = params.toString();
+
+    return `${host}${path}${query ? `?${query}` : ""}`;
   } catch {
     return null;
   }

@@ -44,30 +44,50 @@ function stripHtmlToText(html: string): string {
     .trim();
 }
 
+const MAX_REDIRECTS = 5;
+
 // Best-effort only — never throws. A page that can't be fetched (JS-rendered,
 // paywalled, blocked) returns null, so the caller falls back to a paste-text
 // step rather than failing the whole wizard.
+//
+// Follows redirects manually (rather than fetch's redirect: "follow") so
+// each hop's target is re-checked against isFetchableUrl — otherwise a
+// public URL could 302 to an internal/blocked address (cloud metadata,
+// localhost) and bypass the guard entirely.
 export async function fetchPostingText(url: string): Promise<string | null> {
-  if (!isFetchableUrl(url)) return null;
+  let currentUrl = url;
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; JOTAJobTracker/1.0; +https://github.com/ashggan/job-tracker-webapp)",
-        Accept: "text/html",
-      },
-      redirect: "follow",
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) return null;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      if (!isFetchableUrl(currentUrl)) return null;
 
-    const contentLength = response.headers.get("content-length");
-    if (contentLength && Number(contentLength) > 5_000_000) return null;
+      const response = await fetch(currentUrl, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; JOTAJobTracker/1.0; +https://github.com/ashggan/job-tracker-webapp)",
+          Accept: "text/html",
+        },
+        redirect: "manual",
+        signal: AbortSignal.timeout(8000),
+      });
 
-    const html = await response.text();
-    const text = stripHtmlToText(html);
-    return text.length > 0 ? text : null;
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) return null;
+        currentUrl = new URL(location, currentUrl).toString();
+        continue;
+      }
+
+      if (!response.ok) return null;
+
+      const contentLength = response.headers.get("content-length");
+      if (contentLength && Number(contentLength) > 5_000_000) return null;
+
+      const html = await response.text();
+      const text = stripHtmlToText(html);
+      return text.length > 0 ? text : null;
+    }
+    return null; // too many redirects
   } catch {
     return null;
   }
