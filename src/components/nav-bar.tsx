@@ -48,7 +48,7 @@ export function NavBar({ initials }: { initials: string }) {
           );
         })}
       </nav>
-      <Button size="sm" render={<Link href="/applications/wizard" />}>
+      <Button size="sm" nativeButton={false} render={<Link href="/applications/wizard" />}>
         <Plus data-icon="inline-start" />
         New Application
       </Button>
