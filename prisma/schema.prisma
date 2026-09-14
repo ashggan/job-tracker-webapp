@@ -21,6 +21,7 @@ model User {
   applications  Application[]
   aiUsageLogs   AIUsageLog[]
   resetTokens   PasswordResetToken[]
+  resume        UserResume?
 }
 
 // Supports the in-app "forgot password" flow (§4). Not one of the spec's
@@ -234,6 +235,7 @@ enum AIAction {
   tailor_cv
   tailor_cover_letter
   extract_listing
+  extract_resume
 }
 
 model AIUsageLog {
@@ -247,4 +249,40 @@ model AIUsageLog {
   createdAt    DateTime    @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ---------- Resume (§5.10) ----------
+
+enum ResumeFileType {
+  PDF
+  DOCX
+}
+
+enum ResumeParseStatus {
+  OK
+  LOW_CONFIDENCE
+  FAILED
+}
+
+model UserResume {
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalFilename String
+  fileType         ResumeFileType
+  fileBytes        Bytes
+  fileSizeBytes    Int
+  extractedText    String            @db.Text
+  parseStatus      ResumeParseStatus
+  parseWarning     String?
+
+  // Derived, read-only preview cache -- { name, title, email, summary },
+  // all nullable. Auto-regenerated (overwritten, not merged) on every
+  // upload by a best-effort AI call; never hand-edited, and never read by
+  // scoring/tailoring, which use extractedText. Null until the AI call
+  // succeeds at least once, or if the user has no API key configured.
+  basicInfo Json?
+
+  uploadedAt       DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }

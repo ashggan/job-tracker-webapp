@@ -13,8 +13,9 @@ export const PROVIDER_LABELS: Record<SupportedProvider, string> = {
   google: "Google (Gemini)",
 };
 
-// Cheapest current model per provider — used only to validate a key and,
-// eventually, for the AI feature's real calls (M7/M8).
+// Cheapest current model per provider — used to validate a key, and for
+// every AI feature's real calls (posting extraction, fit scoring, CV/cover
+// letter tailoring, resume basic-info extraction).
 const DEFAULT_MODEL: Record<SupportedProvider, string> = {
   anthropic: "claude-haiku-4-5",
   openai: "gpt-4o-mini",
