@@ -229,6 +229,7 @@ enum AIAction {
   tailor_cv
   tailor_cover_letter
   extract_listing
+  extract_resume
 }
 
 enum KeySource {
@@ -273,6 +274,14 @@ model UserResume {
   extractedText    String            @db.Text
   parseStatus      ResumeParseStatus
   parseWarning     String?
+
+  // Derived, read-only preview cache -- { name, title, email, summary },
+  // all nullable. Auto-regenerated (overwritten, not merged) on every
+  // upload by a best-effort AI call; never hand-edited, and never read by
+  // scoring/tailoring, which use extractedText. Null until the AI call
+  // succeeds at least once, or if the user has no API key configured.
+  basicInfo Json?
+
   uploadedAt       DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 }
