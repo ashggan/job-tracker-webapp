@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseResume } from "@/lib/resume/parse-resume";
-import { ResumeFileType, type ResumeParseStatus } from "@prisma/client";
+import { extractBasicInfo } from "@/lib/ai/extract-basic-info";
+import { Prisma, ResumeFileType, type ResumeParseStatus } from "@prisma/client";
 
 // §4: reject anything over 5MB before attempting to parse it.
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -104,6 +105,11 @@ export async function POST(request: Request) {
   const parseStatus: ResumeParseStatus = parseResult.status;
   const parseWarning = parseResult.status === "LOW_CONFIDENCE" ? parseResult.warning : null;
 
+  // Best-effort only -- never blocks or fails the upload. Returns null with
+  // no API key configured, on a provider error, or on timeout; the resume
+  // is already good to save by this point regardless.
+  const basicInfo = await extractBasicInfo(userId, parseResult.text);
+
   // Always an upsert keyed on userId, never a bare create -- one CV per
   // user, and a single write with no window where the user has no resume
   // on file if it fails partway (§4).
@@ -118,6 +124,7 @@ export async function POST(request: Request) {
       extractedText: parseResult.text,
       parseStatus,
       parseWarning,
+      basicInfo: basicInfo ?? undefined,
     },
     update: {
       originalFilename: file.name,
@@ -127,6 +134,10 @@ export async function POST(request: Request) {
       extractedText: parseResult.text,
       parseStatus,
       parseWarning,
+      // Overwritten (not merged) on every upload -- a derived cache, not an
+      // editable field. Reset to null on a stale/failed extraction rather
+      // than leaving the previous resume's info attached to this one.
+      basicInfo: basicInfo ?? Prisma.JsonNull,
     },
   });
 
@@ -135,5 +146,6 @@ export async function POST(request: Request) {
     parseStatus: resume.parseStatus,
     warning: resume.parseWarning,
     wordCount: wordCount(parseResult.text),
+    basicInfo: resume.basicInfo,
   });
 }
