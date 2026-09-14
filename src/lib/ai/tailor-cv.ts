@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AIAction, LlmProvider } from "@prisma/client";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
+import { loadCandidateContext } from "@/lib/ai/candidate-context";
 import { prisma } from "@/lib/prisma";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
 
@@ -33,20 +34,6 @@ export type TailoredCoverLetter = z.infer<typeof coverLetterSchema>;
 export type TailorCoverLetterResult =
   | { ok: true; data: TailoredCoverLetter }
   | { ok: false; error: string };
-
-async function loadCandidateContext(userId: string): Promise<string | null> {
-  const profile = await prisma.userProfile.findUnique({ where: { userId } });
-  const hasResume = profile?.resumeStructured != null;
-  const hasPreferences = !!profile?.preferencesText?.trim();
-  if (!hasResume && !hasPreferences) return null;
-
-  return [
-    hasResume ? `Candidate resume (structured):\n${JSON.stringify(profile!.resumeStructured)}` : null,
-    hasPreferences ? `Candidate preferences/notes:\n${profile!.preferencesText}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-}
 
 function jobContext(posting: ScoreFitInput): string {
   return [
@@ -90,7 +77,7 @@ export async function tailorCv(userId: string, posting: ScoreFitInput): Promise<
     if (!candidateContext) {
       return {
         ok: false,
-        error: "Complete your profile (resume or preferences) before tailoring your CV",
+        error: "Upload a resume or add preferences in Profile before tailoring your CV",
       };
     }
 
@@ -132,7 +119,7 @@ export async function tailorCoverLetter(
     if (!candidateContext) {
       return {
         ok: false,
-        error: "Complete your profile (resume or preferences) before generating a cover letter",
+        error: "Upload a resume or add preferences in Profile before generating a cover letter",
       };
     }
 

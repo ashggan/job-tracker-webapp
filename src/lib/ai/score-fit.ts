@@ -2,6 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
+import { loadCandidateContext } from "@/lib/ai/candidate-context";
 import { prisma } from "@/lib/prisma";
 
 // Rough $/1M-token blended estimate (input+output average) per provider — just
@@ -44,22 +45,13 @@ export async function scoreFit(
       return { ok: false, error: "Add an API key in Settings before using this feature" };
     }
 
-    const profile = await prisma.userProfile.findUnique({ where: { userId } });
-    const hasResume = profile?.resumeStructured != null;
-    const hasPreferences = !!profile?.preferencesText?.trim();
-    if (!hasResume && !hasPreferences) {
+    const candidateContext = await loadCandidateContext(userId);
+    if (!candidateContext) {
       return {
         ok: false,
-        error: "Complete your profile (resume or preferences) before scoring fit",
+        error: "Upload a resume or add preferences in Profile before scoring fit",
       };
     }
-
-    const candidateContext = [
-      hasResume ? `Candidate resume (structured):\n${JSON.stringify(profile!.resumeStructured)}` : null,
-      hasPreferences ? `Candidate preferences/notes:\n${profile!.preferencesText}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n\n");
 
     const jobContext = [
       `Job title: ${posting.jobTitle}`,
