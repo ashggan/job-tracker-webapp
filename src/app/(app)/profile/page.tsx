@@ -12,17 +12,17 @@ export default async function ProfilePage() {
   const resume = await prisma.userResume.findUnique({ where: { userId } });
 
   return (
-    <div className="flex flex-col items-start gap-5 px-7 py-8">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-7 py-8">
       <div className="flex flex-col gap-1">
         <h3 className="text-xl">Profile</h3>
-        <p className="max-w-xl text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Upload your CV — this is what scoring and tailoring use for every application.
           Replacing it only affects future scoring and tailoring; documents already generated for
           past applications don&apos;t change.
         </p>
       </div>
 
-      <Card className="w-full max-w-xl">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Resume</CardTitle>
           <CardDescription>
