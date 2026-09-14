@@ -23,6 +23,41 @@ function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
+const CONTENT_TYPE_BY_FILE_TYPE: Record<ResumeFileType, string> = {
+  PDF: "application/pdf",
+  DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+
+// Strips characters that could break out of the quoted-string in the
+// Content-Disposition header (originalFilename is user-supplied at upload
+// time, so it isn't safe to interpolate as-is).
+function sanitizeFilenameForHeader(name: string): string {
+  return name.replace(/[\r\n"]/g, "").trim() || "resume";
+}
+
+export async function GET() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const resume = await prisma.userResume.findUnique({ where: { userId } });
+  if (!resume) {
+    return NextResponse.json({ error: "No resume on file." }, { status: 404 });
+  }
+
+  // Returns the original file bytes, not the extracted text -- the user
+  // uploaded a formatted resume, they should get the same formatted resume
+  // back (§3).
+  return new Response(resume.fileBytes, {
+    headers: {
+      "Content-Type": CONTENT_TYPE_BY_FILE_TYPE[resume.fileType],
+      "Content-Disposition": `attachment; filename="${sanitizeFilenameForHeader(resume.originalFilename)}"`,
+    },
+  });
+}
+
 export async function POST(request: Request) {
   const session = await auth();
   // Every read/write is scoped to the authenticated user's own row, derived
