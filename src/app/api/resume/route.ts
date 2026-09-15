@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseResume } from "@/lib/resume/parse-resume";
-import { extractBasicInfo } from "@/lib/ai/extract-basic-info";
+import { extractResumeSections } from "@/lib/ai/extract-resume-sections";
 import { Prisma, ResumeFileType, type ResumeParseStatus } from "@prisma/client";
 
 // §4: reject anything over 5MB before attempting to parse it.
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
   // Best-effort only -- never blocks or fails the upload. Returns null with
   // no API key configured, on a provider error, or on timeout; the resume
   // is already good to save by this point regardless.
-  const basicInfo = await extractBasicInfo(userId, parseResult.text);
+  const basicInfo = await extractResumeSections(userId, parseResult.text);
 
   // Always an upsert keyed on userId, never a bare create -- one CV per
   // user, and a single write with no window where the user has no resume

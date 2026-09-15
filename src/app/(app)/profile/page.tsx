@@ -7,22 +7,26 @@ import { ResumeUploadForm } from "@/components/resume-upload-form";
 type BasicInfo = {
   name: string | null;
   title: string | null;
-  email: string | null;
+  contacts: string[];
   summary: string | null;
 };
 
 // basicInfo is a derived, AI-written JSON cache (never hand-edited), but
 // still untyped at the DB layer -- validate loosely rather than trust it.
+// Only pulls the identity-preview fields out of the full ResumeSections
+// shape (header + summary) -- experience/skills/education aren't shown
+// here, this is just a "did it parse you correctly" sanity check.
 function asBasicInfo(value: unknown): BasicInfo | null {
   if (!value || typeof value !== "object") return null;
   const v = value as Record<string, unknown>;
+  const header = typeof v.header === "object" && v.header ? (v.header as Record<string, unknown>) : {};
   const info: BasicInfo = {
-    name: typeof v.name === "string" ? v.name : null,
-    title: typeof v.title === "string" ? v.title : null,
-    email: typeof v.email === "string" ? v.email : null,
+    name: typeof header.name === "string" ? header.name : null,
+    title: typeof header.title === "string" ? header.title : null,
+    contacts: Array.isArray(header.contacts) ? header.contacts.filter((c) => typeof c === "string") : [],
     summary: typeof v.summary === "string" ? v.summary : null,
   };
-  return info.name || info.title || info.email || info.summary ? info : null;
+  return info.name || info.title || info.contacts.length > 0 || info.summary ? info : null;
 }
 
 export default async function ProfilePage() {
@@ -65,7 +69,9 @@ export default async function ProfilePage() {
               <div className="text-xs font-semibold text-muted-foreground">Preview (as parsed)</div>
               {basicInfo.name && <div className="text-sm font-semibold">{basicInfo.name}</div>}
               {basicInfo.title && <div className="text-sm text-muted-foreground">{basicInfo.title}</div>}
-              {basicInfo.email && <div className="text-sm text-muted-foreground">{basicInfo.email}</div>}
+              {basicInfo.contacts.length > 0 && (
+                <div className="text-sm text-muted-foreground">{basicInfo.contacts.join(" · ")}</div>
+              )}
               {basicInfo.summary && <p className="mt-1 text-sm">{basicInfo.summary}</p>}
             </div>
           )}

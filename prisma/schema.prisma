@@ -276,11 +276,12 @@ model UserResume {
   parseStatus      ResumeParseStatus
   parseWarning     String?
 
-  // Derived, read-only preview cache -- { name, title, email, summary },
-  // all nullable. Auto-regenerated (overwritten, not merged) on every
-  // upload by a best-effort AI call; never hand-edited, and never read by
-  // scoring/tailoring, which use extractedText. Null until the AI call
-  // succeeds at least once, or if the user has no API key configured.
+  // Derived, read-only cache of every resume section (header, summary,
+  // experience, skills, languages, education, additionalSections) -- see
+  // ResumeSections in extract-resume-sections.ts for the exact shape.
+  // Auto-regenerated (overwritten, not merged) on every upload by a
+  // best-effort AI call; never hand-edited. Null until the AI call succeeds
+  // at least once, or if the user has no API key configured.
   basicInfo Json?
 
   uploadedAt       DateTime          @default(now())
