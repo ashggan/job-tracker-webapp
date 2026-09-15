@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 type UploadResult =
   | { kind: "success"; wordCount: number; warning: string | null }
@@ -12,18 +11,16 @@ type UploadResult =
 
 export function ResumeUploadForm({ hasExistingResume }: { hasExistingResume: boolean }) {
   const router = useRouter();
-  const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<UploadResult | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const file = formData.get("file");
-    if (!(file instanceof File) || file.size === 0) {
-      setResult({ kind: "error", message: "Choose a file first." });
-      return;
-    }
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.set("file", file);
 
     setResult(null);
     startTransition(async () => {
@@ -36,30 +33,42 @@ export function ResumeUploadForm({ hasExistingResume }: { hasExistingResume: boo
       }
 
       setResult({ kind: "success", wordCount: body.wordCount, warning: body.warning });
-      formRef.current?.reset();
+      event.target.value = "";
       // The page is a server component reading UserResume directly --
-      // refresh so filename/date/download link reflect what was just saved.
+      // refresh so the file row/preview reflect what was just saved.
       router.refresh();
     });
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="resume-file">
-          {hasExistingResume ? "Replace resume" : "Upload resume"}
-        </Label>
-        <Input
-          id="resume-file"
-          name="file"
-          type="file"
-          accept=".pdf,.docx"
-          required
-          disabled={isPending}
-        />
-      </div>
-      <Button type="submit" disabled={isPending} className="self-start">
-        {isPending ? "Uploading…" : hasExistingResume ? "Replace" : "Upload"}
+    <div className="flex flex-col gap-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.docx"
+        className="hidden"
+        disabled={isPending}
+        onChange={handleFileChange}
+        aria-label={hasExistingResume ? "Replace resume" : "Upload resume"}
+      />
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={isPending}
+        onClick={() => inputRef.current?.click()}
+        className="self-start"
+      >
+        {isPending ? (
+          "Uploading…"
+        ) : hasExistingResume ? (
+          "Replace"
+        ) : (
+          <>
+            <Upload data-icon="inline-start" />
+            Upload resume
+          </>
+        )}
       </Button>
 
       {result?.kind === "success" && (
@@ -69,6 +78,6 @@ export function ResumeUploadForm({ hasExistingResume }: { hasExistingResume: boo
         </div>
       )}
       {result?.kind === "error" && <p className="text-sm text-destructive">{result.message}</p>}
-    </form>
+    </div>
   );
 }
