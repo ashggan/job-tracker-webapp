@@ -5,6 +5,13 @@ function formatTokens(n: number): string {
   return n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
 }
 
+// Rough estimate, not billing-accurate (see ROUGH_COST_PER_1M_TOKENS in the
+// AI call sites) -- under a cent still real usage, just not worth implying
+// false precision with "$0.00".
+function formatCost(cost: number): string {
+  return cost > 0 && cost < 0.01 ? "<$0.01" : `$${cost.toFixed(2)}`;
+}
+
 export function UsageSection({ usage }: { usage: UsageSummary }) {
   return (
     <section>
@@ -23,6 +30,10 @@ export function UsageSection({ usage }: { usage: UsageSummary }) {
           <div className="font-heading text-3xl font-bold">{formatTokens(usage.totalTokens)}</div>
           <div className="text-[13px] text-muted-foreground">tokens consumed</div>
         </div>
+        <div>
+          <div className="font-heading text-3xl font-bold">{formatCost(usage.totalCost)}</div>
+          <div className="text-[13px] text-muted-foreground">est. cost</div>
+        </div>
       </div>
 
       {usage.byAction.length > 0 ? (
@@ -39,6 +50,9 @@ export function UsageSection({ usage }: { usage: UsageSummary }) {
                 Tokens
               </TableHead>
               <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                Cost
+              </TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                 Provider
               </TableHead>
             </TableRow>
@@ -48,7 +62,21 @@ export function UsageSection({ usage }: { usage: UsageSummary }) {
               <TableRow key={row.action}>
                 <TableCell>{row.label}</TableCell>
                 <TableCell>{row.calls}</TableCell>
-                <TableCell>{formatTokens(row.tokens)}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span>{formatTokens(row.tokens)}</span>
+                    <div className="h-1.5 w-14 overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full rounded-full bg-accent-foreground"
+                        style={{ width: `${Math.round(row.tokenShare * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[12px] text-muted-foreground">
+                      {Math.round(row.tokenShare * 100)}%
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>{formatCost(row.cost)}</TableCell>
                 <TableCell className="text-muted-foreground">{row.providers}</TableCell>
               </TableRow>
             ))}

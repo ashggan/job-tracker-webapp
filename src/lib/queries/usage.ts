@@ -26,11 +26,14 @@ export type UsageSummary = {
   resetsAt: Date;
   totalCalls: number;
   totalTokens: number;
+  totalCost: number;
   byAction: {
     action: AIAction;
     label: string;
     calls: number;
     tokens: number;
+    cost: number;
+    tokenShare: number; // 0-1, this action's share of totalTokens -- for the inline bar
     providers: string; // comma-joined distinct provider labels used for this action
   }[];
 };
@@ -45,22 +48,34 @@ export async function getUsageSummary(userId: string): Promise<UsageSummary> {
 
   const rows = await prisma.aIUsageLog.findMany({
     where: { userId, createdAt: { gte: startOfMonth } },
-    select: { action: true, provider: true, tokensUsed: true },
+    select: { action: true, provider: true, tokensUsed: true, costEstimate: true },
   });
 
-  const byAction = new Map<AIAction, { calls: number; tokens: number; providers: Set<LlmProvider> }>();
+  const byAction = new Map<
+    AIAction,
+    { calls: number; tokens: number; cost: number; providers: Set<LlmProvider> }
+  >();
   for (const row of rows) {
-    const entry = byAction.get(row.action) ?? { calls: 0, tokens: 0, providers: new Set<LlmProvider>() };
+    const entry = byAction.get(row.action) ?? {
+      calls: 0,
+      tokens: 0,
+      cost: 0,
+      providers: new Set<LlmProvider>(),
+    };
     entry.calls += 1;
     entry.tokens += row.tokensUsed;
+    entry.cost += row.costEstimate;
     entry.providers.add(row.provider);
     byAction.set(row.action, entry);
   }
 
+  const totalTokens = rows.reduce((sum, r) => sum + r.tokensUsed, 0);
+
   return {
     resetsAt: startOfNextMonth,
     totalCalls: rows.length,
-    totalTokens: rows.reduce((sum, r) => sum + r.tokensUsed, 0),
+    totalTokens,
+    totalCost: rows.reduce((sum, r) => sum + r.costEstimate, 0),
     byAction: AI_ACTION_ORDER.filter((action) => byAction.has(action)).map((action) => {
       const entry = byAction.get(action)!;
       return {
@@ -68,6 +83,8 @@ export async function getUsageSummary(userId: string): Promise<UsageSummary> {
         label: AI_ACTION_LABELS[action],
         calls: entry.calls,
         tokens: entry.tokens,
+        cost: entry.cost,
+        tokenShare: totalTokens > 0 ? entry.tokens / totalTokens : 0,
         providers: [...entry.providers].map(providerLabel).join(", "),
       };
     }),
