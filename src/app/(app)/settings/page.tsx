@@ -1,19 +1,22 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUsageSummary } from "@/lib/queries/usage";
 import { AccountSection } from "./account-section";
 import { ApiKeySection } from "./api-key-section";
+import { UsageSection } from "./usage-section";
 
 export default async function SettingsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [user, apiKeys] = await Promise.all([
+  const [user, apiKeys, usage] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id } }),
     prisma.userApiKey.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     }),
+    getUsageSummary(session.user.id),
   ]);
   if (!user) redirect("/login");
 
@@ -29,10 +32,7 @@ export default async function SettingsPage() {
 
       <hr className="border-border" />
 
-      <section>
-        <h3 className="mb-1 text-xl">AI usage this period</h3>
-        <p className="text-sm text-muted-foreground">Usage accounting and data export ship next.</p>
-      </section>
+      <UsageSection usage={usage} />
     </div>
   );
 }
