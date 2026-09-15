@@ -10,18 +10,24 @@ import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 
 export function StepFitScore({
   extracted,
+  initialFit,
   onBack,
   onContinue,
 }: {
   extracted: ExtractedPosting;
+  initialFit?: FitScore | null;
   onBack: () => void;
   onContinue: (fit: FitScore | null) => void;
 }) {
-  const [fit, setFit] = useState<FitScore | null>(null);
+  const [fit, setFit] = useState<FitScore | null>(initialFit ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialFit == null);
 
   useEffect(() => {
+    // Already scored on an earlier visit to this step — don't re-fetch (and
+    // re-bill) an identical result just because the component remounted.
+    if (initialFit != null) return;
+
     let cancelled = false;
     scoreFitAction({
       jobTitle: extracted.jobTitle,

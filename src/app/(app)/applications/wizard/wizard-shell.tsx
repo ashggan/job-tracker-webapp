@@ -97,6 +97,7 @@ export function WizardShell() {
       {step === "fit" && extracted && (
         <StepFitScore
           extracted={extracted}
+          initialFit={generated.fit}
           onBack={() => setStep("duplicate")}
           onContinue={(scored) => {
             mergeGenerated({ fit: scored });
@@ -108,6 +109,8 @@ export function WizardShell() {
       {step === "materials" && extracted && (
         <StepMaterials
           extracted={extracted}
+          initialCv={generated.cv}
+          initialCoverLetter={generated.coverLetter}
           onBack={() => setStep("fit")}
           onContinue={(materials) => {
             mergeGenerated({ cv: materials.cv, coverLetter: materials.coverLetter });

@@ -86,19 +86,25 @@ function MaterialSection({
 
 export function StepMaterials({
   extracted,
+  initialCv,
+  initialCoverLetter,
   onBack,
   onContinue,
 }: {
   extracted: ExtractedPosting;
+  initialCv?: TailoredCv | null;
+  initialCoverLetter?: TailoredCoverLetter | null;
   onBack: () => void;
   onContinue: (materials: { cv: TailoredCv | null; coverLetter: TailoredCoverLetter | null }) => void;
 }) {
-  const [cv, setCv] = useState<TailoredCv | null>(null);
+  const [cv, setCv] = useState<TailoredCv | null>(initialCv ?? null);
   const [cvError, setCvError] = useState<string | null>(null);
-  const [cvLoading, setCvLoading] = useState(true);
-  const [coverLetter, setCoverLetter] = useState<TailoredCoverLetter | null>(null);
+  const [cvLoading, setCvLoading] = useState(initialCv == null);
+  const [coverLetter, setCoverLetter] = useState<TailoredCoverLetter | null>(initialCoverLetter ?? null);
   const [letterError, setLetterError] = useState<string | null>(null);
-  const [letterLoading, setLetterLoading] = useState(extracted.wantsCoverLetter);
+  const [letterLoading, setLetterLoading] = useState(
+    extracted.wantsCoverLetter && initialCoverLetter == null
+  );
   const [downloading, setDownloading] = useState<"cv" | "cover_letter" | null>(null);
 
   function applyCvResult(result: Awaited<ReturnType<typeof tailorCvAction>>) {
@@ -134,12 +140,16 @@ export function StepMaterials({
   // Fetch on mount directly (rather than via generateCv/generateCoverLetter,
   // whose synchronous setState-true call would trigger cascading renders if
   // invoked from an effect) — cvLoading/letterLoading already start true.
+  // Skips whichever already has a value from an earlier visit to this step,
+  // so navigating back and forward doesn't re-bill an identical result.
   useEffect(() => {
     let cancelled = false;
-    tailorCvAction(toMaterialInput(extracted)).then((result) => {
-      if (!cancelled) applyCvResult(result);
-    });
-    if (extracted.wantsCoverLetter) {
+    if (initialCv == null) {
+      tailorCvAction(toMaterialInput(extracted)).then((result) => {
+        if (!cancelled) applyCvResult(result);
+      });
+    }
+    if (extracted.wantsCoverLetter && initialCoverLetter == null) {
       tailorCoverLetterAction(toMaterialInput(extracted)).then((result) => {
         if (!cancelled) applyCoverLetterResult(result);
       });
