@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import { Download, FileText } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResumeUploadForm } from "@/components/resume-upload-form";
 
 type BasicInfo = {
@@ -47,13 +48,38 @@ export default async function ProfilePage() {
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Resume</CardTitle>
-          <CardDescription>
-            {resume
-              ? `${resume.originalFilename} · ${resume.fileType} · uploaded ${resume.uploadedAt.toLocaleDateString()}`
-              : "No resume uploaded yet."}
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {resume ? (
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3.5">
+              <div className="flex items-center gap-3">
+                <FileText className="size-4 shrink-0 text-primary" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">{resume.originalFilename}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Uploaded {resume.uploadedAt.toLocaleDateString()} · {resume.fileType}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <a
+                  href="/api/resume"
+                  title="Download current resume"
+                  aria-label="Download current resume"
+                  className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Download className="size-4" />
+                </a>
+                <ResumeUploadForm hasExistingResume />
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
+              <p className="text-sm text-muted-foreground">No resume uploaded yet.</p>
+              <ResumeUploadForm hasExistingResume={false} />
+            </div>
+          )}
+
           {resume?.parseStatus === "LOW_CONFIDENCE" && resume.parseWarning && (
             <div className="rounded-sm border border-destructive/40 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
               {resume.parseWarning}
@@ -61,24 +87,16 @@ export default async function ProfilePage() {
           )}
 
           {basicInfo && (
-            <div className="flex flex-col gap-1.5 rounded-sm border border-border bg-muted/50 px-3.5 py-3">
-              <div className="text-xs font-semibold text-muted-foreground">Preview (as parsed)</div>
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-muted/50 px-3.5 py-3">
+              <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Preview (as parsed)
+              </div>
               {basicInfo.name && <div className="text-sm font-semibold">{basicInfo.name}</div>}
               {basicInfo.title && <div className="text-sm text-muted-foreground">{basicInfo.title}</div>}
               {basicInfo.email && <div className="text-sm text-muted-foreground">{basicInfo.email}</div>}
               {basicInfo.summary && <p className="mt-1 text-sm">{basicInfo.summary}</p>}
             </div>
           )}
-
-          {resume && (
-            <a
-              href="/api/resume"
-              className="self-start text-sm font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Download current resume
-            </a>
-          )}
-          <ResumeUploadForm hasExistingResume={Boolean(resume)} />
         </CardContent>
       </Card>
     </div>
