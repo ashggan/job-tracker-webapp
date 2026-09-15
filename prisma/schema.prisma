@@ -21,6 +21,7 @@ model User {
   applications  Application[]
   aiUsageLogs   AIUsageLog[]
   resetTokens   PasswordResetToken[]
+  resume        UserResume?
 }
 
 // Supports the in-app "forgot password" flow (§4). Not one of the spec's
@@ -132,11 +133,15 @@ model Application {
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  jobTitle    String
-  company     String
-  postingUrl  String?
-  location    String?
-  source      String   // aggregated board name, or "manual"
+  jobTitle       String
+  company        String
+  postingUrl     String?
+  location       String?
+  source         String   // aggregated board name, or "manual"
+  descriptionText String? @db.Text // full posting text, from guided-add extraction
+  requirements   Json?    // string[] — required quals, as extracted
+  niceToHaves    Json?    // string[]
+  deadline       DateTime? // null if the posting didn't state one
 
   rawListingId String?
   rawListing   RawListing? @relation(fields: [rawListingId], references: [id], onDelete: SetNull)
@@ -145,11 +150,12 @@ model Application {
   dateFound   DateTime @default(now())
   dateApplied DateTime?
 
-  fitScore        Int?
-  fitLabel        FitLabel?
-  fitStrengths    String?   @db.Text
-  fitGaps         String?   @db.Text
-  fitGeneratedAt  DateTime?
+  fitScore          Int?
+  fitLabel          FitLabel?
+  fitStrengths      Json?     // string[] — specific, tied to requirement items
+  fitGaps           Json?     // string[]
+  fitRecommendation String?   @db.Text // plain-language line, e.g. "7/10 — worth tailoring"
+  fitGeneratedAt    DateTime?
 
   interviewPrepNotes String? @db.Text
 
@@ -162,6 +168,7 @@ model Application {
   stageEvents        StageEvent[]
 
   @@index([userId, stage])
+  @@index([userId, postingUrl])
 }
 
 model Note {
@@ -228,11 +235,7 @@ enum AIAction {
   tailor_cv
   tailor_cover_letter
   extract_listing
-}
-
-enum KeySource {
-  shared_default
-  own_key
+  extract_resume
 }
 
 model AIUsageLog {
@@ -241,9 +244,46 @@ model AIUsageLog {
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   action       AIAction
   provider     LlmProvider
-  keySource    KeySource
+  tokensUsed   Int         @default(0)
   costEstimate Float
   createdAt    DateTime    @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ---------- Resume (§5.10) ----------
+
+enum ResumeFileType {
+  PDF
+  DOCX
+}
+
+enum ResumeParseStatus {
+  OK
+  LOW_CONFIDENCE
+  FAILED
+}
+
+model UserResume {
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalFilename String
+  fileType         ResumeFileType
+  fileBytes        Bytes
+  fileSizeBytes    Int
+  extractedText    String            @db.Text
+  parseStatus      ResumeParseStatus
+  parseWarning     String?
+
+  // Derived, read-only cache of every resume section (header, summary,
+  // experience, skills, languages, education, additionalSections) -- see
+  // ResumeSections in extract-resume-sections.ts for the exact shape.
+  // Auto-regenerated (overwritten, not merged) on every upload by a
+  // best-effort AI call; never hand-edited. Null until the AI call succeeds
+  // at least once, or if the user has no API key configured.
+  basicInfo Json?
+
+  uploadedAt       DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }

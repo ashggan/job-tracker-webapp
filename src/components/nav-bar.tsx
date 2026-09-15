@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { cn } from "cn";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/(app)/actions";
 
 const LINKS = [
@@ -47,6 +48,10 @@ export function NavBar({ initials }: { initials: string }) {
           );
         })}
       </nav>
+      <Button size="sm" nativeButton={false} render={<Link href="/applications/wizard" />}>
+        <Plus data-icon="inline-start" />
+        New Application
+      </Button>
       <div className="flex-1" />
       <DropdownMenu>
         <DropdownMenuTrigger className="flex size-8 items-center justify-center rounded-full bg-accent text-xs font-extrabold text-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
