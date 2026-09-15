@@ -20,6 +20,7 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
+    "diff": "^9.0.0",
     "docx": "^9.7.1",
     "lucide-react": "^1.43.0",
     "mammoth": "^1.12.3",

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { tailorCvAction, tailorCoverLetterAction, renderMaterialDocxAction } from "@/lib/actions/wizard";
+import { diffText, isBulletUnchanged, droppedBullets, findOriginalBullets } from "@/lib/diff-highlight";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
-import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
+import type { TailoredCv, TailoredCoverLetter, OriginalCvContent } from "@/lib/ai/tailor-cv";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
 
 function toMaterialInput(extracted: ExtractedPosting): ScoreFitInput {
@@ -100,6 +102,10 @@ export function StepMaterials({
   const [cv, setCv] = useState<TailoredCv | null>(initialCv ?? null);
   const [cvError, setCvError] = useState<string | null>(null);
   const [cvLoading, setCvLoading] = useState(initialCv == null);
+  // Only set on a fresh generate/regenerate (not on a cached revisit, since
+  // that skips the fetch entirely) -- diff highlighting is unavailable for a
+  // cached result, the CV preview itself still works fine either way.
+  const [originalForDiff, setOriginalForDiff] = useState<OriginalCvContent | null>(null);
   const [coverLetter, setCoverLetter] = useState<TailoredCoverLetter | null>(initialCoverLetter ?? null);
   const [letterError, setLetterError] = useState<string | null>(null);
   const [letterLoading, setLetterLoading] = useState(
@@ -114,6 +120,7 @@ export function StepMaterials({
       return;
     }
     setCv(result.data);
+    setOriginalForDiff(result.original);
   }
 
   function applyCoverLetterResult(result: Awaited<ReturnType<typeof tailorCoverLetterAction>>) {
@@ -186,23 +193,68 @@ export function StepMaterials({
                 {cv.header.title && <p className="text-muted-foreground">{cv.header.title}</p>}
               </div>
             )}
-            <p>{cv.summary}</p>
+            {originalForDiff?.summary ? (
+              <p>
+                {diffText(originalForDiff.summary, cv.summary).map((token, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      token.kind === "added" && "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400",
+                      token.kind === "removed" && "text-muted-foreground line-through"
+                    )}
+                  >
+                    {token.text}
+                  </span>
+                ))}
+              </p>
+            ) : (
+              <p>{cv.summary}</p>
+            )}
             {cv.experience.map((job) => (
               <div key={`${job.company}-${job.title}`} className="flex flex-col gap-1">
                 <p className="font-semibold">
                   {job.title}, {job.company}{" "}
                   <span className="font-normal text-muted-foreground">· {job.dates}</span>
                 </p>
-                {job.projects.map((project, i) => (
-                  <div key={project.name ?? i} className="flex flex-col gap-1">
-                    {project.name && <p className="text-muted-foreground">{project.name}</p>}
-                    <ul className="flex flex-col gap-1">
-                      {project.bullets.map((bullet) => (
-                        <li key={bullet}>• {bullet}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                {job.projects.map((project, i) => {
+                  const originalBullets = originalForDiff
+                    ? findOriginalBullets(originalForDiff.experience, job.company, project.name)
+                    : [];
+                  const dropped = originalForDiff ? droppedBullets(originalBullets, project.bullets) : [];
+                  return (
+                    <div key={project.name ?? i} className="flex flex-col gap-1">
+                      {project.name && <p className="text-muted-foreground">{project.name}</p>}
+                      <ul className="flex flex-col gap-1">
+                        {project.bullets.map((bullet) => {
+                          const rewritten = originalForDiff && !isBulletUnchanged(bullet, originalBullets);
+                          return (
+                            <li
+                              key={bullet}
+                              className={cn(rewritten && "border-l-2 border-accent-foreground/40 pl-2 -ml-2")}
+                              title={rewritten ? "Rewritten or reordered from your original resume" : undefined}
+                            >
+                              • {bullet}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {dropped.length > 0 && (
+                        <details className="text-[12px] text-muted-foreground">
+                          <summary className="cursor-pointer">
+                            {dropped.length} point{dropped.length > 1 ? "s" : ""} from your original not included
+                          </summary>
+                          <ul className="flex flex-col gap-1 py-1 pl-3">
+                            {dropped.map((d) => (
+                              <li key={d} className="line-through">
+                                • {d}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
             <div className="flex flex-col gap-1">

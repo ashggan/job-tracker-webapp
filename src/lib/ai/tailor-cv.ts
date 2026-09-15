@@ -50,7 +50,15 @@ export const tailoredCvSchema = z.object({
 });
 
 export type TailoredCv = z.infer<typeof tailoredCvSchema>;
-export type TailorCvResult = { ok: true; data: TailoredCv } | { ok: false; error: string };
+
+// The resume's own summary/experience/skills, before tailoring -- returned
+// alongside the tailored result so the UI can highlight what actually
+// changed, without a second DB round-trip.
+export type OriginalCvContent = Pick<z.infer<typeof resumeSectionsSchema>, "summary" | "experience" | "skills">;
+
+export type TailorCvResult =
+  | { ok: true; data: TailoredCv; original: OriginalCvContent }
+  | { ok: false; error: string };
 
 // Only the fields the AI is allowed to generate/rewrite -- everything else
 // in TailoredCv is merged in afterward from the resume's own sections.
@@ -142,6 +150,11 @@ export async function tailorCv(userId: string, posting: ScoreFitInput): Promise<
         languages: sections.languages,
         education: sections.education,
         additionalSections: sections.additionalSections,
+      },
+      original: {
+        summary: sections.summary,
+        experience: sections.experience,
+        skills: sections.skills,
       },
     };
   } catch (error) {
