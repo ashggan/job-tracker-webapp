@@ -13,7 +13,9 @@ const ROUGH_COST_PER_1M_TOKENS: Record<string, number> = {
   google: 1,
 };
 
-const resumeSectionsSchema = z.object({
+// Exported so consumers of the stored basicInfo Json (e.g. tailorCv) can
+// validate it at the same shape this function produces.
+export const resumeSectionsSchema = z.object({
   header: z.object({
     name: z.string().nullable(),
     title: z.string().nullable(),

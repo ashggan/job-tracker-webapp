@@ -4,6 +4,7 @@ import type { AIAction, LlmProvider } from "@prisma/client";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { loadCandidateContext } from "@/lib/ai/candidate-context";
+import { resumeSectionsSchema } from "@/lib/ai/extract-resume-sections";
 import { prisma } from "@/lib/prisma";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
 
@@ -15,16 +16,45 @@ const ROUGH_COST_PER_1M_TOKENS: Record<string, number> = {
   google: 1,
 };
 
-// Exported so consumers of stored contentJson (e.g. docx-export.ts) can
-// validate it at the same shape these functions produce.
+// A full structured resume: header/languages/education/additionalSections
+// are copied through verbatim from the real resume (never AI-generated, so
+// they can never be fabricated); summary/experience/skills are what the AI
+// is allowed to tailor. Exported so consumers of stored contentJson (e.g.
+// docx-export.ts) can validate it at the same shape this file produces.
 export const tailoredCvSchema = z.object({
-  summary: z.string(), // 2-3 sentence professional summary, tailored to this posting
-  experienceBullets: z.array(z.string()), // rewritten/prioritized to foreground fit
-  skills: z.array(z.string()),
+  header: z.object({
+    name: z.string().nullable(),
+    title: z.string().nullable(),
+    contacts: z.array(z.string()),
+  }),
+  summary: z.string(),
+  experience: z.array(
+    z.object({
+      company: z.string(),
+      title: z.string(),
+      dates: z.string(),
+      projects: z.array(
+        z.object({
+          name: z.string().nullable(),
+          bullets: z.array(z.string()),
+        })
+      ),
+    })
+  ),
+  skills: z.array(z.object({ category: z.string(), items: z.array(z.string()) })),
+  languages: z.array(z.string()),
+  education: z.array(
+    z.object({ school: z.string(), degree: z.string().nullable(), dates: z.string().nullable() })
+  ),
+  additionalSections: z.array(z.object({ heading: z.string(), items: z.array(z.string()) })),
 });
 
 export type TailoredCv = z.infer<typeof tailoredCvSchema>;
 export type TailorCvResult = { ok: true; data: TailoredCv } | { ok: false; error: string };
+
+// Only the fields the AI is allowed to generate/rewrite -- everything else
+// in TailoredCv is merged in afterward from the resume's own sections.
+const tailoredContentSchema = tailoredCvSchema.pick({ summary: true, experience: true, skills: true });
 
 export const coverLetterSchema = z.object({
   body: z.string(), // full cover letter text, 3-4 short paragraphs
@@ -73,29 +103,47 @@ export async function tailorCv(userId: string, posting: ScoreFitInput): Promise<
       return { ok: false, error: "Add an API key in Settings before using this feature" };
     }
 
-    const candidateContext = await loadCandidateContext(userId);
-    if (!candidateContext) {
-      return {
-        ok: false,
-        error: "Upload a resume or add preferences in Profile before tailoring your CV",
-      };
+    const resume = await prisma.userResume.findUnique({ where: { userId } });
+    const parsedSections = resumeSectionsSchema.safeParse(resume?.basicInfo);
+    if (!parsedSections.success) {
+      return { ok: false, error: "Upload a resume in Profile before tailoring your CV" };
     }
+    const sections = parsedSections.data;
 
     const model = getLanguageModel(resolved.provider, resolved.apiKey);
     const { object, usage } = await generateObject({
       model,
-      schema: tailoredCvSchema,
+      schema: tailoredContentSchema,
       prompt:
-        "Tailor this candidate's CV content for this specific job posting. Write a short " +
-        "professional summary (2-3 sentences) that speaks directly to the role, reorder and " +
-        "rewrite experience bullets to foreground what's most relevant to the posting's " +
-        "requirements, and list the skills most relevant to this posting. Don't invent " +
-        `experience the candidate doesn't have.\n\n${jobContext(posting)}\n\n${candidateContext}`,
+        "Tailor this candidate's resume content for this specific job posting. Rewrite the " +
+        "summary (2-3 sentences) to speak directly to the role. For each job, reorder and " +
+        "rewrite its bullets (within each project) to foreground what's most relevant to the " +
+        "posting — but keep every company, title, dates, and project name exactly as given, " +
+        "never invent or change them. Reorder and select from the candidate's real skills to " +
+        "foreground what's relevant — keep the same category names, never invent a skill they " +
+        "don't have. Don't invent experience the candidate doesn't have. Return every job from " +
+        "the candidate's real experience, not just the most relevant ones.\n\n" +
+        `${jobContext(posting)}\n\nCandidate's real resume data:\n${JSON.stringify({
+          experience: sections.experience,
+          skills: sections.skills,
+        })}`,
       abortSignal: AbortSignal.timeout(30_000),
     });
 
     await logUsage(userId, "tailor_cv", resolved.provider, usage.totalTokens ?? 0);
-    return { ok: true, data: object };
+
+    return {
+      ok: true,
+      data: {
+        header: sections.header,
+        summary: object.summary,
+        experience: object.experience,
+        skills: object.skills,
+        languages: sections.languages,
+        education: sections.education,
+        additionalSections: sections.additionalSections,
+      },
+    };
   } catch (error) {
     console.error("[tailorCv]", error);
     return {

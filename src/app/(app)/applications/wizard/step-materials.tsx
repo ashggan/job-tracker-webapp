@@ -179,14 +179,40 @@ export function StepMaterials({
         downloading={downloading === "cv"}
       >
         {cv && (
-          <div className="flex flex-col gap-2 rounded-lg border border-border p-3 text-[13px]">
+          <div className="flex flex-col gap-3 rounded-lg border border-border p-3 text-[13px]">
+            {(cv.header.name || cv.header.title) && (
+              <div>
+                {cv.header.name && <p className="font-semibold">{cv.header.name}</p>}
+                {cv.header.title && <p className="text-muted-foreground">{cv.header.title}</p>}
+              </div>
+            )}
             <p>{cv.summary}</p>
-            <ul className="flex flex-col gap-1">
-              {cv.experienceBullets.map((bullet) => (
-                <li key={bullet}>• {bullet}</li>
+            {cv.experience.map((job) => (
+              <div key={`${job.company}-${job.title}`} className="flex flex-col gap-1">
+                <p className="font-semibold">
+                  {job.title}, {job.company}{" "}
+                  <span className="font-normal text-muted-foreground">· {job.dates}</span>
+                </p>
+                {job.projects.map((project, i) => (
+                  <div key={project.name ?? i} className="flex flex-col gap-1">
+                    {project.name && <p className="text-muted-foreground">{project.name}</p>}
+                    <ul className="flex flex-col gap-1">
+                      {project.bullets.map((bullet) => (
+                        <li key={bullet}>• {bullet}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div className="flex flex-col gap-1">
+              {cv.skills.map((group) => (
+                <p key={group.category} className="text-muted-foreground">
+                  <span className="font-semibold text-foreground">{group.category}:</span>{" "}
+                  {group.items.join(", ")}
+                </p>
               ))}
-            </ul>
-            <p className="text-muted-foreground">{cv.skills.join(", ")}</p>
+            </div>
           </div>
         )}
       </MaterialSection>
