@@ -15,7 +15,6 @@ import { auth } from "@/lib/auth";
 import {
   getBoardColumns,
   getTableRows,
-  getDistinctSources,
   type TableFilters as Filters,
 } from "@/lib/queries/applications";
 import { isDueSoon } from "@/lib/stages";
@@ -81,14 +80,11 @@ export default async function TablePage({
     dir: (params.dir as Filters["dir"]) ?? "desc",
   };
 
-  const [rows, sources] = await Promise.all([
-    getTableRows(userId, filters),
-    getDistinctSources(userId),
-  ]);
+  const rows = await getTableRows(userId, filters);
 
   return (
     <div className="flex flex-col">
-      <TableFilters sources={sources} />
+      <TableFilters />
 
       <div className="overflow-x-auto px-7 pb-7 pt-1.5">
         <Table>
