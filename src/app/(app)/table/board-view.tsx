@@ -1,18 +1,15 @@
-import { Clock } from "lucide-react";
-import { BoardTableToggle } from "@/components/board-table-toggle";
 import { StageSelect } from "@/components/stage-select";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 import { FitBadge } from "@/components/fit-badge";
+import { Clock } from "lucide-react";
 import { STAGE_LABELS, daysSince } from "@/lib/stages";
 import type { getBoardColumns } from "@/lib/queries/applications";
 
+// Pure presentational -- the toolbar (including the board/table toggle) is
+// owned by ApplicationsView, since that's the client component holding the
+// view state a Server Component like this one can't receive as a live prop.
 export function BoardView({ columns }: { columns: Awaited<ReturnType<typeof getBoardColumns>> }) {
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-end border-b border-border px-7 py-4">
-        <BoardTableToggle />
-      </div>
-
       <div className="flex gap-4 overflow-x-auto px-7 py-5.5">
         {columns.map(({ stage, jobs }) => (
           <div key={stage} className="w-52 flex-none">
@@ -53,6 +50,5 @@ export function BoardView({ columns }: { columns: Awaited<ReturnType<typeof getB
           </div>
         ))}
       </div>
-    </div>
   );
 }
