@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BoardTableToggle } from "@/components/board-table-toggle";
+import { BoardTableToggle, type BoardTableView } from "@/components/board-table-toggle";
 import { STAGE_LABELS, STAGE_ORDER, FIT_LABEL_ORDER, FIT_META } from "@/lib/stages";
 
 const DAY_OPTIONS = [
@@ -22,7 +22,15 @@ const DAY_OPTIONS = [
   { value: "365", label: "Date: Last year" },
 ];
 
-export function TableFilters({ sources }: { sources: string[] }) {
+export function TableFilters({
+  sources,
+  view,
+  onViewChange,
+}: {
+  sources: string[];
+  view: BoardTableView;
+  onViewChange: (view: BoardTableView) => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -146,7 +154,7 @@ export function TableFilters({ sources }: { sources: string[] }) {
       </Select>
 
       <div className="flex-1" />
-      <BoardTableToggle />
+      <BoardTableToggle view={view} onChange={onViewChange} />
       </div>
     </>
   );

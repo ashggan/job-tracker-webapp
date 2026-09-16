@@ -20,7 +20,7 @@ import {
 } from "@/lib/queries/applications";
 import { isDueSoon } from "@/lib/stages";
 import { cn } from "cn";
-import { TableFilters } from "./table-filters";
+import { ApplicationsView } from "./applications-view";
 import { BoardView } from "./board-view";
 import type { Stage, FitLabel, TailoredKind } from "@prisma/client";
 
@@ -85,13 +85,6 @@ export default async function TablePage({
   const session = await auth();
   const userId = session!.user.id;
 
-  // Board and Table are both served from this one route now -- ?view=board
-  // switches which one renders, via the same BoardTableToggle in both.
-  if (params.view === "board") {
-    const columns = await getBoardColumns(userId);
-    return <BoardView columns={columns} />;
-  }
-
   const filters: Filters = {
     q: params.q,
     stage: params.stage as Stage | undefined,
@@ -102,15 +95,17 @@ export default async function TablePage({
     dir: (params.dir as Filters["dir"]) ?? "desc",
   };
 
-  const [rows, sources] = await Promise.all([
+  // Board and Table are two components now, switched locally by
+  // ApplicationsView -- all three fetches happen up front so the toggle
+  // never needs a server round-trip. ?view=board only picks the initial
+  // view (e.g. for a bookmarked link).
+  const [columns, rows, sources] = await Promise.all([
+    getBoardColumns(userId),
     getTableRows(userId, filters),
     getDistinctSources(userId),
   ]);
 
-  return (
-    <div className="flex flex-col">
-      <TableFilters sources={sources} />
-
+  const tableContent = (
       <div className="overflow-x-auto px-7 pb-7 pt-1.5">
         <Table>
           <TableHeader>
@@ -210,6 +205,14 @@ export default async function TablePage({
           </TableBody>
         </Table>
       </div>
-    </div>
+  );
+
+  return (
+    <ApplicationsView
+      defaultView={params.view === "board" ? "board" : "table"}
+      board={<BoardView columns={columns} />}
+      table={tableContent}
+      sources={sources}
+    />
   );
 }

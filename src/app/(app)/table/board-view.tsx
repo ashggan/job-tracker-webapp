@@ -1,31 +1,15 @@
-import { Plus, Clock } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { BoardTableToggle } from "@/components/board-table-toggle";
 import { StageSelect } from "@/components/stage-select";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 import { FitBadge } from "@/components/fit-badge";
+import { Clock } from "lucide-react";
 import { STAGE_LABELS, daysSince } from "@/lib/stages";
 import type { getBoardColumns } from "@/lib/queries/applications";
 
+// Pure presentational -- the toolbar (including the board/table toggle) is
+// owned by ApplicationsView, since that's the client component holding the
+// view state a Server Component like this one can't receive as a live prop.
 export function BoardView({ columns }: { columns: Awaited<ReturnType<typeof getBoardColumns>> }) {
   return (
-    <div className="flex flex-col">
-      <form action="/applications/new" className="flex items-center gap-3 border-b border-border px-7 py-4">
-        <Input
-          name="url"
-          placeholder="Paste a job URL or add manually"
-          title="Prefills the posting link on the add-job form"
-          className="max-w-70"
-        />
-        <Button type="submit">
-          <Plus />
-          Add job
-        </Button>
-        <div className="flex-1" />
-        <BoardTableToggle />
-      </form>
-
       <div className="flex gap-4 overflow-x-auto px-7 py-5.5">
         {columns.map(({ stage, jobs }) => (
           <div key={stage} className="w-52 flex-none">
@@ -66,6 +50,5 @@ export function BoardView({ columns }: { columns: Awaited<ReturnType<typeof getB
           </div>
         ))}
       </div>
-    </div>
   );
 }
