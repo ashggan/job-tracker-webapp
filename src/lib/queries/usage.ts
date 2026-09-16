@@ -36,6 +36,12 @@ export type UsageSummary = {
     tokenShare: number; // 0-1, this action's share of totalTokens -- for the inline bar
     providers: string; // comma-joined distinct provider labels used for this action
   }[];
+  byProvider: {
+    provider: LlmProvider;
+    label: string;
+    calls: number;
+    callShare: number; // 0-1, this provider's share of totalCalls -- for the dashboard bar
+  }[];
 };
 
 // "This period" = the current calendar month -- there's no billing cycle of
@@ -55,6 +61,7 @@ export async function getUsageSummary(userId: string): Promise<UsageSummary> {
     AIAction,
     { calls: number; tokens: number; cost: number; providers: Set<LlmProvider> }
   >();
+  const byProvider = new Map<LlmProvider, number>();
   for (const row of rows) {
     const entry = byAction.get(row.action) ?? {
       calls: 0,
@@ -67,13 +74,16 @@ export async function getUsageSummary(userId: string): Promise<UsageSummary> {
     entry.cost += row.costEstimate;
     entry.providers.add(row.provider);
     byAction.set(row.action, entry);
+
+    byProvider.set(row.provider, (byProvider.get(row.provider) ?? 0) + 1);
   }
 
   const totalTokens = rows.reduce((sum, r) => sum + r.tokensUsed, 0);
+  const totalCalls = rows.length;
 
   return {
     resetsAt: startOfNextMonth,
-    totalCalls: rows.length,
+    totalCalls,
     totalTokens,
     totalCost: rows.reduce((sum, r) => sum + r.costEstimate, 0),
     byAction: AI_ACTION_ORDER.filter((action) => byAction.has(action)).map((action) => {
@@ -88,5 +98,13 @@ export async function getUsageSummary(userId: string): Promise<UsageSummary> {
         providers: [...entry.providers].map(providerLabel).join(", "),
       };
     }),
+    byProvider: [...byProvider.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([provider, calls]) => ({
+        provider,
+        label: providerLabel(provider),
+        calls,
+        callShare: totalCalls > 0 ? calls / totalCalls : 0,
+      })),
   };
 }
