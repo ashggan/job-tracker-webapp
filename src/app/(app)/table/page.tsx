@@ -15,7 +15,28 @@ import { getTableRows, getDistinctSources, type TableFilters as Filters } from "
 import { STAGE_LABELS, isDueSoon } from "@/lib/stages";
 import { cn } from "cn";
 import { TableFilters } from "./table-filters";
-import type { Stage, FitLabel } from "@prisma/client";
+import type { Stage, FitLabel, TailoredKind } from "@prisma/client";
+
+function TailoredDocLink({
+  applicationId,
+  docs,
+  kind,
+}: {
+  applicationId: string;
+  docs: { id: string; kind: TailoredKind }[];
+  kind: TailoredKind;
+}) {
+  const doc = docs.find((d) => d.kind === kind);
+  if (!doc) return <span className="text-muted-foreground">—</span>;
+  return (
+    <a
+      href={`/api/applications/${applicationId}/documents/${doc.id}`}
+      className="text-accent-foreground hover:underline"
+    >
+      Download
+    </a>
+  );
+}
 
 function SortHeader({
   column,
@@ -149,10 +170,14 @@ export default async function TablePage({
                   <FitBadge label={row.fitLabel} />
                 </TableCell>
                 <TableCell>{STAGE_LABELS[row.stage]}</TableCell>
-                <TableCell className="text-muted-foreground">—</TableCell>
-                <TableCell className="text-muted-foreground">—</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {row.interviewPrepNotes ? "Yes" : "—"}
+                <TableCell>
+                  <TailoredDocLink applicationId={row.id} docs={row.tailoredDocuments} kind="cv" />
+                </TableCell>
+                <TableCell>
+                  <TailoredDocLink applicationId={row.id} docs={row.tailoredDocuments} kind="cover_letter" />
+                </TableCell>
+                <TableCell>
+                  <TailoredDocLink applicationId={row.id} docs={row.tailoredDocuments} kind="prep_notes" />
                 </TableCell>
                 <TableCell className="max-w-50 truncate text-muted-foreground">
                   {row.notes[0]?.body ?? "—"}
