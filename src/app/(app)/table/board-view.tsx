@@ -5,14 +5,10 @@ import { BoardTableToggle } from "@/components/board-table-toggle";
 import { StageSelect } from "@/components/stage-select";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 import { FitBadge } from "@/components/fit-badge";
-import { auth } from "@/lib/auth";
-import { getBoardColumns } from "@/lib/queries/applications";
 import { STAGE_LABELS, daysSince } from "@/lib/stages";
+import type { getBoardColumns } from "@/lib/queries/applications";
 
-export default async function BoardPage() {
-  const session = await auth();
-  const columns = await getBoardColumns(session!.user.id);
-
+export function BoardView({ columns }: { columns: Awaited<ReturnType<typeof getBoardColumns>> }) {
   return (
     <div className="flex flex-col">
       <form action="/applications/new" className="flex items-center gap-3 border-b border-border px-7 py-4">

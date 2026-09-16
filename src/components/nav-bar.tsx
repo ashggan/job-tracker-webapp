@@ -13,11 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/(app)/actions";
 
-// Applications matches both /table and /board -- Board is still a real view,
-// just reached via the in-page toggle now rather than its own nav entry, and
-// the nav should still read as "active" while looking at it.
+// Board view lives at /table?view=board now, not its own route -- pathname
+// is "/table" either way, so a plain startsWith match is enough again.
 const LINKS = [
-  { href: "/table", label: "Applications", matches: ["/table", "/board"] },
+  { href: "/table", label: "Applications" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },
@@ -33,7 +32,7 @@ export function NavBar({ initials }: { initials: string }) {
       </Link>
       <nav className="flex items-center gap-1">
         {LINKS.map((link) => {
-          const active = (link.matches ?? [link.href]).some((path) => pathname.startsWith(path));
+          const active = pathname.startsWith(link.href);
           return (
             <Link
               key={link.href}
