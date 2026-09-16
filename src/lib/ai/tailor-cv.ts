@@ -87,7 +87,7 @@ function jobContext(posting: ScoreFitInput): string {
     .join("\n\n");
 }
 
-async function logUsage(
+export async function logUsage(
   userId: string,
   action: AIAction,
   provider: LlmProvider,

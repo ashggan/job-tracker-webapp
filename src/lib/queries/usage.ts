@@ -7,6 +7,8 @@ export const AI_ACTION_ORDER: AIAction[] = [
   "score",
   "tailor_cv",
   "tailor_cover_letter",
+  "generate_prep_notes",
+  "generate_perks_summary",
   "extract_resume",
 ];
 
@@ -15,6 +17,8 @@ export const AI_ACTION_LABELS: Record<AIAction, string> = {
   score: "Fit scoring",
   tailor_cv: "CV tailoring",
   tailor_cover_letter: "Cover letter tailoring",
+  generate_prep_notes: "Interview prep notes",
+  generate_perks_summary: "Salary & perks summary",
   extract_resume: "Resume extraction",
 };
 

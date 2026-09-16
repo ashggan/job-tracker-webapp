@@ -14,7 +14,7 @@ export type GenerationExtras = {
   wantsPerks: boolean;
 };
 
-const DEFAULT_EXTRAS: GenerationExtras = {
+export const DEFAULT_EXTRAS: GenerationExtras = {
   wantsCoverLetter: true,
   wantsPrepNotes: true,
   wantsExtraNote: true,

@@ -17,6 +17,9 @@ import {
   type TailoredCoverLetter,
 } from "@/lib/ai/tailor-cv";
 import { renderTailoredDocumentDocx } from "@/lib/docx-export";
+import { generatePrepNotes } from "@/lib/ai/generate-prep-notes";
+import { generatePerksSummary } from "@/lib/ai/generate-perks-summary";
+import type { GenerationExtras } from "@/app/(app)/applications/wizard/step-duplicate-check";
 import type { TailoredKind } from "@prisma/client";
 
 export type ExtractPostingActionResult =
@@ -119,7 +122,18 @@ export type SaveApplicationInput = {
   fit: FitScore | null;
   cv: TailoredCv | null;
   coverLetter: TailoredCoverLetter | null;
+  extras: GenerationExtras;
 };
+
+function toScoreFitInput(extracted: ExtractedPosting): ScoreFitInput {
+  return {
+    jobTitle: extracted.jobTitle,
+    company: extracted.company,
+    descriptionText: extracted.description,
+    requirements: extracted.requirements,
+    niceToHaves: extracted.niceToHaves,
+  };
+}
 
 // The Deadline field in step-review.tsx is freeform text (a placeholder hint,
 // not enforced format), so a value like "ASAP" must be caught here rather
@@ -144,6 +158,16 @@ export async function createApplicationFromWizardAction(
       error: "Deadline isn't a valid date — go back to Review and use a format like 2026-12-15, or clear it",
     };
   }
+
+  // Best-effort, outside the transaction since these are slow AI calls — a
+  // failure here must not block saving the application itself.
+  const scoreFitInput = toScoreFitInput(input.extracted);
+  const [prepNotesResult, perksResult] = await Promise.all([
+    input.extras.wantsPrepNotes ? generatePrepNotes(userId, scoreFitInput, input.fit) : null,
+    input.extras.wantsPerks ? generatePerksSummary(userId, scoreFitInput) : null,
+  ]);
+  if (prepNotesResult && !prepNotesResult.ok) console.error("[generatePrepNotes]", prepNotesResult.error);
+  if (perksResult && !perksResult.ok) console.error("[generatePerksSummary]", perksResult.error);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -185,6 +209,37 @@ export async function createApplicationFromWizardAction(
             kind: "cover_letter",
             version: 1,
             contentJson: input.coverLetter,
+          },
+        });
+      }
+      if (prepNotesResult?.ok) {
+        await tx.tailoredDocument.create({
+          data: {
+            applicationId: application.id,
+            kind: "prep_notes",
+            version: 1,
+            contentJson: { markdown: prepNotesResult.markdown },
+          },
+        });
+      }
+      if (perksResult?.ok) {
+        await tx.tailoredDocument.create({
+          data: {
+            applicationId: application.id,
+            kind: "perks",
+            version: 1,
+            contentJson: { markdown: perksResult.markdown },
+          },
+        });
+      }
+      if (input.extras.wantsExtraNote && input.fit) {
+        await tx.note.create({
+          data: {
+            applicationId: application.id,
+            body:
+              `Fit: ${input.fit.fitScore}/10 — ${input.fit.fitRecommendation}\n\n` +
+              `Strengths:\n${input.fit.fitStrengths.map((s) => `- ${s}`).join("\n")}\n\n` +
+              `Gaps:\n${input.fit.fitGaps.map((g) => `- ${g}`).join("\n")}`,
           },
         });
       }
