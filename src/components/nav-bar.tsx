@@ -13,9 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/(app)/actions";
 
+// Applications matches both /table and /board -- Board is still a real view,
+// just reached via the in-page toggle now rather than its own nav entry, and
+// the nav should still read as "active" while looking at it.
 const LINKS = [
-  { href: "/board", label: "Board" },
-  { href: "/table", label: "Table" },
+  { href: "/table", label: "Applications", matches: ["/table", "/board"] },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },
@@ -26,12 +28,12 @@ export function NavBar({ initials }: { initials: string }) {
 
   return (
     <header className="flex items-center gap-5 border-b border-border px-7 py-4.5">
-      <Link href="/board" className="font-heading text-[19px] font-bold text-accent-foreground">
+      <Link href="/table" className="font-heading text-[19px] font-bold text-accent-foreground">
         JOTA
       </Link>
       <nav className="flex items-center gap-1">
         {LINKS.map((link) => {
-          const active = pathname.startsWith(link.href);
+          const active = (link.matches ?? [link.href]).some((path) => pathname.startsWith(path));
           return (
             <Link
               key={link.href}

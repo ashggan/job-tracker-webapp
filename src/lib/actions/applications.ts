@@ -55,7 +55,7 @@ export async function createApplicationAction(
     data: { applicationId: application.id, fromStage: null, toStage: "wishlist" },
   });
 
-  redirect("/board");
+  redirect("/table");
 }
 
 export async function updateStageAction(applicationId: string, toStage: Stage) {

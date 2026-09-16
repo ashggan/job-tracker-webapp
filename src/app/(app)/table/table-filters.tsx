@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BoardTableToggle } from "@/components/board-table-toggle";
 import { STAGE_LABELS, STAGE_ORDER, FIT_LABEL_ORDER, FIT_META } from "@/lib/stages";
 
 const DAY_OPTIONS = [
@@ -127,6 +128,9 @@ export function TableFilters({ sources }: { sources: string[] }) {
           ))}
         </SelectContent>
       </Select>
+
+      <div className="flex-1" />
+      <BoardTableToggle />
     </div>
   );
 }

@@ -195,5 +195,5 @@ export async function createApplicationFromWizardAction(
 
   revalidatePath("/board");
   revalidatePath("/table");
-  redirect("/board");
+  redirect("/table");
 }
