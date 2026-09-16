@@ -15,6 +15,7 @@ export function StepSave({
   fit,
   cv,
   coverLetter,
+  wantsCoverLetter,
   onBack,
 }: {
   postingUrl?: string;
@@ -22,6 +23,7 @@ export function StepSave({
   fit: FitScore | null;
   cv: TailoredCv | null;
   coverLetter: TailoredCoverLetter | null;
+  wantsCoverLetter: boolean;
   onBack: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function StepSave({
         )}
         <p className="text-muted-foreground">
           {cv ? "Tailored CV ready. " : "No tailored CV. "}
-          {extracted.wantsCoverLetter && (coverLetter ? "Cover letter ready." : "Cover letter not generated.")}
+          {wantsCoverLetter && (coverLetter ? "Cover letter ready." : "Cover letter not generated.")}
         </p>
       </div>
 

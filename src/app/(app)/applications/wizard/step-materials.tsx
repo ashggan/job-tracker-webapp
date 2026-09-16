@@ -88,12 +88,14 @@ function MaterialSection({
 
 export function StepMaterials({
   extracted,
+  wantsCoverLetter,
   initialCv,
   initialCoverLetter,
   onBack,
   onContinue,
 }: {
   extracted: ExtractedPosting;
+  wantsCoverLetter: boolean;
   initialCv?: TailoredCv | null;
   initialCoverLetter?: TailoredCoverLetter | null;
   onBack: () => void;
@@ -109,7 +111,7 @@ export function StepMaterials({
   const [coverLetter, setCoverLetter] = useState<TailoredCoverLetter | null>(initialCoverLetter ?? null);
   const [letterError, setLetterError] = useState<string | null>(null);
   const [letterLoading, setLetterLoading] = useState(
-    extracted.wantsCoverLetter && initialCoverLetter == null
+    wantsCoverLetter && initialCoverLetter == null
   );
   const [downloading, setDownloading] = useState<"cv" | "cover_letter" | null>(null);
 
@@ -156,7 +158,7 @@ export function StepMaterials({
         if (!cancelled) applyCvResult(result);
       });
     }
-    if (extracted.wantsCoverLetter && initialCoverLetter == null) {
+    if (wantsCoverLetter && initialCoverLetter == null) {
       tailorCoverLetterAction(toMaterialInput(extracted)).then((result) => {
         if (!cancelled) applyCoverLetterResult(result);
       });
@@ -269,7 +271,7 @@ export function StepMaterials({
         )}
       </MaterialSection>
 
-      {extracted.wantsCoverLetter && (
+      {wantsCoverLetter && (
         <MaterialSection
           label="Cover letter"
           loading={letterLoading}
