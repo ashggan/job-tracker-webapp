@@ -1,6 +1,49 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  ExternalHyperlink,
+  type ParagraphChild,
+} from "docx";
 import type { TailoredKind } from "@prisma/client";
 import { tailoredCvSchema, coverLetterSchema, type TailoredCv } from "@/lib/ai/tailor-cv";
+
+const EMAIL_PATTERN = /^[\w.+-]+@[\w-]+\.[\w.-]+$/;
+// A bare domain/URL contact entry -- "ashgan.tech", "linkedin.com/in/x",
+// "github.com/x", or a full "https://..." link -- vs. plain text like a
+// location, which never has a dot-separated, space-free segment like this.
+const URL_LIKE_PATTERN = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/;
+
+// Standard Word hyperlink styling (blue + underline) -- docx doesn't apply
+// this automatically for ExternalHyperlink, it only wires up the click target.
+function hyperlinkRun(text: string): TextRun {
+  return new TextRun({ text, color: "0563C1", underline: {} });
+}
+
+// Turns one header contact entry into a real clickable link when it's an
+// email or a URL/domain; anything else (e.g. a location) stays plain text.
+function contactRun(contact: string): ParagraphChild {
+  const trimmed = contact.trim();
+  if (EMAIL_PATTERN.test(trimmed)) {
+    return new ExternalHyperlink({ link: `mailto:${trimmed}`, children: [hyperlinkRun(trimmed)] });
+  }
+  if (URL_LIKE_PATTERN.test(trimmed)) {
+    const href = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+    return new ExternalHyperlink({ link: href, children: [hyperlinkRun(trimmed)] });
+  }
+  return new TextRun(trimmed);
+}
+
+function contactsParagraph(contacts: string[]): Paragraph {
+  const children: ParagraphChild[] = [];
+  contacts.forEach((contact, i) => {
+    if (i > 0) children.push(new TextRun("  |  "));
+    children.push(contactRun(contact));
+  });
+  return new Paragraph({ children });
+}
 
 function renderCv(cv: TailoredCv) {
   const children: Paragraph[] = [];
@@ -12,7 +55,7 @@ function renderCv(cv: TailoredCv) {
     children.push(new Paragraph({ children: [new TextRun({ text: cv.header.title, size: 24 })] }));
   }
   if (cv.header.contacts.length > 0) {
-    children.push(new Paragraph({ children: [new TextRun(cv.header.contacts.join("  |  "))] }));
+    children.push(contactsParagraph(cv.header.contacts));
   }
 
   children.push(new Paragraph({ text: "Summary", heading: HeadingLevel.HEADING_2 }));
