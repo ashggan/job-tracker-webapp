@@ -32,7 +32,7 @@ export default async function NewApplicationPage({
   return (
     <div className="mx-auto max-w-xl px-7 py-8">
       <Link
-        href="/board"
+        href="/table"
         className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" />

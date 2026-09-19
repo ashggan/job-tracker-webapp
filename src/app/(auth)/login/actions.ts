@@ -21,7 +21,7 @@ export async function loginAction(
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: "/board",
+      redirectTo: "/table",
     });
   } catch (error) {
     if (error instanceof AuthError) {

@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BoardTableToggle } from "@/components/board-table-toggle";
 import { STAGE_LABELS, STAGE_ORDER, FIT_LABEL_ORDER, FIT_META } from "@/lib/stages";
 
 const DAY_OPTIONS = [
@@ -19,7 +20,7 @@ const DAY_OPTIONS = [
   { value: "365", label: "Date: Last year" },
 ];
 
-export function TableFilters({ sources }: { sources: string[] }) {
+export function TableFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,10 +37,6 @@ export function TableFilters({ sources }: { sources: string[] }) {
   const fitItems: Record<string, React.ReactNode> = {
     all: "Fit: All",
     ...Object.fromEntries(FIT_LABEL_ORDER.map((f) => [f, FIT_META[f].label])),
-  };
-  const sourceItems: Record<string, React.ReactNode> = {
-    all: "Source: All",
-    ...Object.fromEntries(sources.map((s) => [s, s === "manual" ? "Manual" : s])),
   };
   const dayItems: Record<string, React.ReactNode> = Object.fromEntries(
     DAY_OPTIONS.map((o) => [o.value, o.label])
@@ -101,20 +98,6 @@ export function TableFilters({ sources }: { sources: string[] }) {
         </SelectContent>
       </Select>
 
-      <Select items={sourceItems} value={searchParams.get("source") ?? "all"} onValueChange={(v) => updateParam("source", v ?? "all")}>
-        <SelectTrigger className="w-40 rounded-sm">
-          <SelectValue placeholder="Source: All" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Source: All</SelectItem>
-          {sources.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s === "manual" ? "Manual" : s}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
       <Select items={dayItems} value={searchParams.get("days") ?? "all"} onValueChange={(v) => updateParam("days", v ?? "all")}>
         <SelectTrigger className="w-44 rounded-sm">
           <SelectValue placeholder="Date: Last 90 days" />
@@ -127,6 +110,9 @@ export function TableFilters({ sources }: { sources: string[] }) {
           ))}
         </SelectContent>
       </Select>
+
+      <div className="flex-1" />
+      <BoardTableToggle />
     </div>
   );
 }

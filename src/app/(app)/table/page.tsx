@@ -9,12 +9,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FitBadge } from "@/components/fit-badge";
+import { StageSelect } from "@/components/stage-select";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 import { auth } from "@/lib/auth";
-import { getTableRows, getDistinctSources, type TableFilters as Filters } from "@/lib/queries/applications";
-import { STAGE_LABELS, isDueSoon } from "@/lib/stages";
+import {
+  getBoardColumns,
+  getTableRows,
+  type TableFilters as Filters,
+} from "@/lib/queries/applications";
+import { isDueSoon } from "@/lib/stages";
 import { cn } from "cn";
 import { TableFilters } from "./table-filters";
+import { BoardView } from "./board-view";
 import type { Stage, FitLabel } from "@prisma/client";
 
 function SortHeader({
@@ -57,6 +63,13 @@ export default async function TablePage({
   const session = await auth();
   const userId = session!.user.id;
 
+  // Board and Table are both served from this one route now -- ?view=board
+  // switches which one renders, via the same BoardTableToggle in both.
+  if (params.view === "board") {
+    const columns = await getBoardColumns(userId);
+    return <BoardView columns={columns} />;
+  }
+
   const filters: Filters = {
     q: params.q,
     stage: params.stage as Stage | undefined,
@@ -67,14 +80,11 @@ export default async function TablePage({
     dir: (params.dir as Filters["dir"]) ?? "desc",
   };
 
-  const [rows, sources] = await Promise.all([
-    getTableRows(userId, filters),
-    getDistinctSources(userId),
-  ]);
+  const rows = await getTableRows(userId, filters);
 
   return (
     <div className="flex flex-col">
-      <TableFilters sources={sources} />
+      <TableFilters />
 
       <div className="overflow-x-auto px-7 pb-7 pt-1.5">
         <Table>
@@ -148,7 +158,9 @@ export default async function TablePage({
                 <TableCell>
                   <FitBadge label={row.fitLabel} />
                 </TableCell>
-                <TableCell>{STAGE_LABELS[row.stage]}</TableCell>
+                <TableCell>
+                  <StageSelect applicationId={row.id} stage={row.stage} />
+                </TableCell>
                 <TableCell className="text-muted-foreground">—</TableCell>
                 <TableCell className="text-muted-foreground">—</TableCell>
                 <TableCell className="text-muted-foreground">

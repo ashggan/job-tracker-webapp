@@ -55,7 +55,7 @@ export async function createApplicationAction(
     data: { applicationId: application.id, fromStage: null, toStage: "wishlist" },
   });
 
-  redirect("/board");
+  redirect("/table");
 }
 
 export async function updateStageAction(applicationId: string, toStage: Stage) {
@@ -86,7 +86,6 @@ export async function updateStageAction(applicationId: string, toStage: Stage) {
     }),
   ]);
 
-  revalidatePath("/board");
   revalidatePath("/table");
 }
 
@@ -98,6 +97,5 @@ export async function deleteApplicationAction(applicationId: string) {
     where: { id: applicationId, userId: session.user.id },
   });
 
-  revalidatePath("/board");
   revalidatePath("/table");
 }

@@ -15,7 +15,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (session && isAuthRoute) {
-    return NextResponse.redirect(new URL("/board", request.url));
+    return NextResponse.redirect(new URL("/table", request.url));
   }
 
   return NextResponse.next();

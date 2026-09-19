@@ -193,7 +193,6 @@ export async function createApplicationFromWizardAction(
     return { error: "Couldn't save this application — try again in a moment" };
   }
 
-  revalidatePath("/board");
   revalidatePath("/table");
-  redirect("/board");
+  redirect("/table");
 }
