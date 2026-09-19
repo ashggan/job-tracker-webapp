@@ -18,19 +18,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function StepReview({
   extracted,
+  postingUrl,
   onBack,
   onContinue,
 }: {
   extracted: ExtractedPosting;
+  postingUrl?: string;
   onBack: () => void;
-  onContinue: (reviewed: ExtractedPosting) => void;
+  onContinue: (reviewed: ExtractedPosting, postingUrl: string | undefined) => void;
 }) {
   const [jobTitle, setJobTitle] = useState(extracted.jobTitle);
   const [company, setCompany] = useState(extracted.company);
   const [description, setDescription] = useState(extracted.description);
   const [requirements, setRequirements] = useState(extracted.requirements.join("\n"));
   const [niceToHaves, setNiceToHaves] = useState(extracted.niceToHaves.join("\n"));
+  const [location, setLocation] = useState(extracted.location ?? "");
   const [deadline, setDeadline] = useState(extracted.deadline ?? "");
+  const [url, setUrl] = useState(postingUrl ?? "");
 
   return (
     <div className="flex flex-col gap-4">
@@ -58,6 +62,19 @@ export function StepReview({
         <Textarea rows={3} value={niceToHaves} onChange={(e) => setNiceToHaves(e.target.value)} />
       </Field>
 
+      <Field label="Location">
+        <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Remote, Toronto, etc." />
+      </Field>
+
+      <Field label="Posting link (optional)">
+        <Input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://…"
+        />
+      </Field>
+
       <Field label="Deadline (YYYY-MM-DD, leave blank if none)">
         <Input value={deadline} onChange={(e) => setDeadline(e.target.value)} placeholder="2026-12-15" />
       </Field>
@@ -70,15 +87,19 @@ export function StepReview({
           type="button"
           size="lg"
           onClick={() =>
-            onContinue({
-              ...extracted,
-              jobTitle,
-              company,
-              description,
-              requirements: requirements.split("\n").map((r) => r.trim()).filter(Boolean),
-              niceToHaves: niceToHaves.split("\n").map((n) => n.trim()).filter(Boolean),
-              deadline: deadline.trim() || null,
-            })
+            onContinue(
+              {
+                ...extracted,
+                jobTitle,
+                company,
+                description,
+                requirements: requirements.split("\n").map((r) => r.trim()).filter(Boolean),
+                niceToHaves: niceToHaves.split("\n").map((n) => n.trim()).filter(Boolean),
+                location: location.trim() || null,
+                deadline: deadline.trim() || null,
+              },
+              url.trim() || undefined
+            )
           }
         >
           Continue

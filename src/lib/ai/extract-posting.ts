@@ -19,6 +19,7 @@ const extractedPostingSchema = z.object({
   description: z.string(),
   requirements: z.array(z.string()),
   niceToHaves: z.array(z.string()),
+  location: z.string().nullable(), // as stated in the posting, or null if not stated — never inferred
   deadline: z.string().nullable(), // ISO date (YYYY-MM-DD), or null if not stated — never inferred
   wantsCoverLetter: z.boolean(),
 });
@@ -108,10 +109,12 @@ export async function extractPostingDetails(
       model,
       schema: extractedPostingSchema,
       prompt:
-        "Extract structured fields from this job posting. If the posting states an " +
-        "application deadline, return it as an ISO date (YYYY-MM-DD) — if it doesn't state " +
-        "one, return null; never guess or infer one. Set wantsCoverLetter to true only if " +
-        "the posting explicitly asks for or strongly implies a cover letter is wanted.\n\n" +
+        "Extract structured fields from this job posting. Return the location as stated in " +
+        "the posting (city/region/remote, etc.) — if it isn't stated, return null; never " +
+        "guess or infer one. If the posting states an application deadline, return it as an " +
+        "ISO date (YYYY-MM-DD) — if it doesn't state one, return null; never guess or infer " +
+        "one. Set wantsCoverLetter to true only if the posting explicitly asks for or " +
+        "strongly implies a cover letter is wanted.\n\n" +
         sourceText.slice(0, 15000),
       abortSignal: AbortSignal.timeout(30_000),
     });

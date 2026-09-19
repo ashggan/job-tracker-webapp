@@ -76,9 +76,11 @@ export function WizardShell() {
       {step === "review" && extracted && (
         <StepReview
           extracted={extracted}
+          postingUrl={postingUrl}
           onBack={() => setStep("posting")}
-          onContinue={(reviewed) => {
+          onContinue={(reviewed, url) => {
             setExtracted(reviewed);
+            setPostingUrl(url);
             setStep("duplicate");
           }}
         />

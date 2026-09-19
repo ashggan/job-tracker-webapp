@@ -153,6 +153,7 @@ export async function createApplicationFromWizardAction(
           jobTitle: input.extracted.jobTitle,
           company: input.extracted.company,
           postingUrl: input.postingUrl,
+          location: input.extracted.location,
           source: "guided",
           descriptionText: input.extracted.description,
           requirements: input.extracted.requirements,
