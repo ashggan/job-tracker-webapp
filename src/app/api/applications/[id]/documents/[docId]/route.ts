@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { renderTailoredDocumentDocx } from "@/lib/docx-export";
+import { renderTailoredDocumentMarkdown } from "@/lib/markdown-export";
+
+const KIND_LABELS: Record<string, string> = {
+  cv: "CV",
+  cover_letter: "Cover Letter",
+  prep_notes: "Interview Prep Notes",
+  perks: "Salary & Perks",
+};
 
 export async function GET(
   _request: Request,
@@ -30,8 +38,23 @@ export async function GET(
   }
 
   try {
+    const kindLabel = KIND_LABELS[document.kind] ?? document.kind;
+
+    if (document.kind === "prep_notes" || document.kind === "perks") {
+      const markdown = renderTailoredDocumentMarkdown(document.contentJson);
+      const filename = `${application.company} - ${kindLabel} - ${application.jobTitle}.md`.replace(
+        /[/\\?%*:|"<>]/g,
+        "-"
+      );
+      return new NextResponse(markdown, {
+        headers: {
+          "Content-Type": "text/markdown; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    }
+
     const buffer = await renderTailoredDocumentDocx(document.kind, document.contentJson);
-    const kindLabel = document.kind === "cv" ? "CV" : "Cover Letter";
     const filename = `${application.company} - ${kindLabel} - ${application.jobTitle}.docx`.replace(
       /[/\\?%*:|"<>]/g,
       "-"

@@ -238,6 +238,8 @@ enum AIAction {
   tailor_cover_letter
   extract_listing
   extract_resume
+  generate_prep_notes
+  generate_perks_summary
 }
 
 model AIUsageLog {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { cn } from "cn";
 import { StepPosting } from "./step-posting";
 import { StepReview } from "./step-review";
-import { StepDuplicateCheck, type GenerationExtras } from "./step-duplicate-check";
+import { StepDuplicateCheck, DEFAULT_EXTRAS, type GenerationExtras } from "./step-duplicate-check";
 import { StepFitScore } from "./step-fit-score";
 import { StepMaterials } from "./step-materials";
 import { StepSave } from "./step-save";
@@ -133,7 +133,7 @@ export function WizardShell() {
           fit={generated.fit}
           cv={generated.cv}
           coverLetter={generated.coverLetter}
-          wantsCoverLetter={extras?.wantsCoverLetter ?? true}
+          extras={extras ?? DEFAULT_EXTRAS}
           onBack={() => setStep("materials")}
         />
       )}

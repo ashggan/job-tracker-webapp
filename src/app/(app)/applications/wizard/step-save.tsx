@@ -8,6 +8,7 @@ import { createApplicationFromWizardAction } from "@/lib/actions/wizard";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 import type { FitScore } from "@/lib/ai/score-fit";
 import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
+import type { GenerationExtras } from "./step-duplicate-check";
 
 export function StepSave({
   postingUrl,
@@ -15,7 +16,7 @@ export function StepSave({
   fit,
   cv,
   coverLetter,
-  wantsCoverLetter,
+  extras,
   onBack,
 }: {
   postingUrl?: string;
@@ -23,7 +24,7 @@ export function StepSave({
   fit: FitScore | null;
   cv: TailoredCv | null;
   coverLetter: TailoredCoverLetter | null;
-  wantsCoverLetter: boolean;
+  extras: GenerationExtras;
   onBack: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,14 @@ export function StepSave({
     setError(null);
     startTransition(async () => {
       try {
-        const result = await createApplicationFromWizardAction({ postingUrl, extracted, fit, cv, coverLetter });
+        const result = await createApplicationFromWizardAction({
+          postingUrl,
+          extracted,
+          fit,
+          cv,
+          coverLetter,
+          extras,
+        });
         if (result?.error) setError(result.error);
         // On success the action redirects to /board — nothing else to do here.
       } catch (error) {
@@ -60,7 +68,7 @@ export function StepSave({
         )}
         <p className="text-muted-foreground">
           {cv ? "Tailored CV ready. " : "No tailored CV. "}
-          {wantsCoverLetter && (coverLetter ? "Cover letter ready." : "Cover letter not generated.")}
+          {extras.wantsCoverLetter && (coverLetter ? "Cover letter ready." : "Cover letter not generated.")}
         </p>
       </div>
 
