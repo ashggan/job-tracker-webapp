@@ -4,7 +4,7 @@ import { useState } from "react";
 import { cn } from "cn";
 import { StepPosting } from "./step-posting";
 import { StepReview } from "./step-review";
-import { StepDuplicateCheck } from "./step-duplicate-check";
+import { StepDuplicateCheck, type GenerationExtras } from "./step-duplicate-check";
 import { StepFitScore } from "./step-fit-score";
 import { StepMaterials } from "./step-materials";
 import { StepSave } from "./step-save";
@@ -32,6 +32,7 @@ export function WizardShell() {
   const [step, setStep] = useState<Step>("posting");
   const [postingUrl, setPostingUrl] = useState<string | undefined>();
   const [extracted, setExtracted] = useState<ExtractedPosting | null>(null);
+  const [extras, setExtras] = useState<GenerationExtras | null>(null);
   const [generated, setGenerated] = useState<GeneratedState>({
     fit: null,
     cv: null,
@@ -92,7 +93,10 @@ export function WizardShell() {
           jobTitle={extracted.jobTitle}
           company={extracted.company}
           onBack={() => setStep("review")}
-          onContinue={() => setStep("fit")}
+          onContinue={(selectedExtras) => {
+            setExtras(selectedExtras);
+            setStep("fit");
+          }}
         />
       )}
 
@@ -111,6 +115,7 @@ export function WizardShell() {
       {step === "materials" && extracted && (
         <StepMaterials
           extracted={extracted}
+          wantsCoverLetter={extras?.wantsCoverLetter ?? true}
           initialCv={generated.cv}
           initialCoverLetter={generated.coverLetter}
           onBack={() => setStep("fit")}
@@ -128,6 +133,7 @@ export function WizardShell() {
           fit={generated.fit}
           cv={generated.cv}
           coverLetter={generated.coverLetter}
+          wantsCoverLetter={extras?.wantsCoverLetter ?? true}
           onBack={() => setStep("materials")}
         />
       )}
