@@ -59,7 +59,10 @@ export async function getTableRows(userId: string, filters: TableFilters) {
   return prisma.application.findMany({
     where,
     orderBy,
-    include: { notes: { orderBy: { createdAt: "desc" }, take: 1 } },
+    include: {
+      notes: { orderBy: { createdAt: "desc" }, take: 1 },
+      tailoredDocuments: { orderBy: { version: "desc" }, select: { id: true, kind: true } },
+    },
   });
 }
 
