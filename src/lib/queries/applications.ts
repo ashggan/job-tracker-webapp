@@ -76,6 +76,11 @@ export async function getDistinctSources(userId: string): Promise<string[]> {
 }
 
 export async function getApplicationForUser(userId: string, id: string) {
-  const application = await prisma.application.findFirst({ where: { id, userId } });
+  const application = await prisma.application.findFirst({
+    where: { id, userId },
+    include: {
+      tailoredDocuments: { orderBy: { version: "desc" }, select: { id: true, kind: true } },
+    },
+  });
   return application;
 }
