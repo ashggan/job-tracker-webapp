@@ -11,11 +11,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function RecordCard({
   postingUrl,
-  source,
   dateFound,
 }: {
   postingUrl: string | null;
-  source: string;
   dateFound: Date;
 }) {
   return (
@@ -37,8 +35,6 @@ export function RecordCard({
           <span className="text-muted-foreground">—</span>
         )}
       </Field>
-
-      <Field label="Source">{source === "manual" ? "Manual" : source === "guided" ? "Guided" : source}</Field>
 
       <Field label="Found">{dateFound.toLocaleDateString()}</Field>
     </div>
