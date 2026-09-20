@@ -6,6 +6,8 @@ import { HeaderSection } from "./header-section";
 import { NotesLog } from "./notes-log";
 import { StageHistory } from "./stage-history";
 import { FitScoreCard } from "./fit-score-card";
+import { RecordCard } from "./record-card";
+import { InterviewPrepNotes } from "./interview-prep-notes";
 import type { TailoredKind } from "@prisma/client";
 
 const DOCUMENT_KINDS: [TailoredKind, string][] = [
@@ -98,6 +100,25 @@ export default async function ApplicationDetailPage({
         </div>
 
         <div className="flex flex-col gap-6">
+          <Card>
+            <CardContent>
+              <RecordCard
+                postingUrl={application.postingUrl}
+                source={application.source}
+                dateFound={application.dateFound}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <InterviewPrepNotes
+                applicationId={application.id}
+                initialNotes={application.interviewPrepNotes ?? ""}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent>
               <NotesLog applicationId={application.id} notes={application.notes} />
