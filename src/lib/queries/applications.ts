@@ -81,6 +81,7 @@ export async function getApplicationForUser(userId: string, id: string) {
     include: {
       tailoredDocuments: { orderBy: { version: "desc" }, select: { id: true, kind: true } },
       notes: { orderBy: { createdAt: "desc" } },
+      stageEvents: { orderBy: { changedAt: "desc" } },
     },
   });
   return application;

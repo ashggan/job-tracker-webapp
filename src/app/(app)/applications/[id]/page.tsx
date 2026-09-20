@@ -7,6 +7,7 @@ import { StageSelect } from "@/components/stage-select";
 import { FitBadge } from "@/components/fit-badge";
 import { EditForm } from "./edit-form";
 import { NotesLog } from "./notes-log";
+import { StageHistory } from "./stage-history";
 import type { TailoredKind } from "@prisma/client";
 
 const DOCUMENT_KINDS: [TailoredKind, string][] = [
@@ -89,6 +90,10 @@ export default async function ApplicationDetailPage({
           ))}
         </div>
       </div>
+
+      <hr className="border-border" />
+
+      <StageHistory events={application.stageEvents} />
 
       <hr className="border-border" />
 
