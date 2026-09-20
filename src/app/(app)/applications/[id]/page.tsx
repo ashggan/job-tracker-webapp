@@ -1,11 +1,8 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getApplicationForUser } from "@/lib/queries/applications";
-import { StageSelect } from "@/components/stage-select";
-import { FitBadge } from "@/components/fit-badge";
-import { EditForm } from "./edit-form";
+import { Card, CardContent } from "@/components/ui/card";
+import { HeaderSection } from "./header-section";
 import { NotesLog } from "./notes-log";
 import { StageHistory } from "./stage-history";
 import { FitScoreForm } from "./fit-score-form";
@@ -50,66 +47,70 @@ export default async function ApplicationDetailPage({
   if (!application) notFound();
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8 px-7 py-8">
-      <div>
-        <Link
-          href="/table"
-          className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-3.5" />
-          Back to table
-        </Link>
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl">{application.jobTitle}</h2>
-          <StageSelect applicationId={application.id} stage={application.stage} />
-        </div>
-        <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-          {application.company}
-          <FitBadge label={application.fitLabel} />
-        </p>
-      </div>
-
-      <EditForm
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-7 py-8">
+      <HeaderSection
         applicationId={application.id}
         jobTitle={application.jobTitle}
         company={application.company}
-        postingUrl={application.postingUrl ?? ""}
         location={application.location ?? ""}
+        postingUrl={application.postingUrl ?? ""}
         deadline={application.deadline ? application.deadline.toISOString().slice(0, 10) : ""}
+        stage={application.stage}
+        dateApplied={application.dateApplied ? application.dateApplied.toLocaleDateString() : null}
       />
 
-      <hr className="border-border" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardContent>
+              <FitScoreForm
+                applicationId={application.id}
+                fitScore={application.fitScore}
+                fitLabel={application.fitLabel}
+                fitStrengths={(application.fitStrengths as string[] | null) ?? []}
+                fitGaps={(application.fitGaps as string[] | null) ?? []}
+                fitRecommendation={application.fitRecommendation}
+              />
+            </CardContent>
+          </Card>
 
-      <div className="flex flex-col gap-3">
-        <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Documents</h3>
-        <div className="flex flex-col gap-2 text-[13px]">
-          {DOCUMENT_KINDS.map(([kind, label]) => (
-            <div key={kind} className="flex items-center justify-between">
-              <span>{label}</span>
-              <TailoredDocLink applicationId={application.id} docs={application.tailoredDocuments} kind={kind} />
-            </div>
-          ))}
+          <Card>
+            <CardContent>
+              <div className="flex flex-col gap-3">
+                <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  Documents
+                </h3>
+                <div className="flex flex-col gap-2 text-[13px]">
+                  {DOCUMENT_KINDS.map(([kind, label]) => (
+                    <div key={kind} className="flex items-center justify-between">
+                      <span>{label}</span>
+                      <TailoredDocLink
+                        applicationId={application.id}
+                        docs={application.tailoredDocuments}
+                        kind={kind}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardContent>
+              <NotesLog applicationId={application.id} notes={application.notes} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <StageHistory events={application.stageEvents} />
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      <hr className="border-border" />
-
-      <FitScoreForm
-        applicationId={application.id}
-        fitScore={application.fitScore}
-        fitLabel={application.fitLabel}
-        fitStrengths={(application.fitStrengths as string[] | null) ?? []}
-        fitGaps={(application.fitGaps as string[] | null) ?? []}
-        fitRecommendation={application.fitRecommendation}
-      />
-
-      <hr className="border-border" />
-
-      <StageHistory events={application.stageEvents} />
-
-      <hr className="border-border" />
-
-      <NotesLog applicationId={application.id} notes={application.notes} />
     </div>
   );
 }
