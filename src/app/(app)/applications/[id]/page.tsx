@@ -78,11 +78,7 @@ export default async function ApplicationDetailPage({
         <div className="flex flex-col gap-6">
           <Card>
             <CardContent>
-              <RecordCard
-                postingUrl={application.postingUrl}
-                source={application.source}
-                dateFound={application.dateFound}
-              />
+              <RecordCard postingUrl={application.postingUrl} dateFound={application.dateFound} />
             </CardContent>
           </Card>
 
