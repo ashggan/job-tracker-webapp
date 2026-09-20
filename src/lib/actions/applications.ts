@@ -198,6 +198,22 @@ export async function setFitScoreAction(
   revalidatePath("/table");
 }
 
+export async function updateInterviewPrepNotesAction(
+  applicationId: string,
+  interviewPrepNotes: string
+): Promise<{ error?: string } | undefined> {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const { count } = await prisma.application.updateMany({
+    where: { id: applicationId, userId: session.user.id },
+    data: { interviewPrepNotes: interviewPrepNotes.trim() || null },
+  });
+  if (count === 0) return { error: "Application not found" };
+
+  revalidatePath(`/applications/${applicationId}`);
+}
+
 export async function updateStageAction(applicationId: string, toStage: Stage) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
