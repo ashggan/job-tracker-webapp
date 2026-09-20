@@ -80,6 +80,7 @@ export async function getApplicationForUser(userId: string, id: string) {
     where: { id, userId },
     include: {
       tailoredDocuments: { orderBy: { version: "desc" }, select: { id: true, kind: true } },
+      notes: { orderBy: { createdAt: "desc" } },
     },
   });
   return application;
