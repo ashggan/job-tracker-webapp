@@ -8,35 +8,7 @@ import { StageHistory } from "./stage-history";
 import { FitScoreCard } from "./fit-score-card";
 import { RecordCard } from "./record-card";
 import { InterviewPrepNotes } from "./interview-prep-notes";
-import type { TailoredKind } from "@prisma/client";
-
-const DOCUMENT_KINDS: [TailoredKind, string][] = [
-  ["cv", "CV"],
-  ["cover_letter", "Cover letter"],
-  ["prep_notes", "Interview prep notes"],
-  ["perks", "Salary & perks summary"],
-];
-
-function TailoredDocLink({
-  applicationId,
-  docs,
-  kind,
-}: {
-  applicationId: string;
-  docs: { id: string; kind: TailoredKind }[];
-  kind: TailoredKind;
-}) {
-  const doc = docs.find((d) => d.kind === kind);
-  if (!doc) return <span className="text-muted-foreground">—</span>;
-  return (
-    <a
-      href={`/api/applications/${applicationId}/documents/${doc.id}`}
-      className="text-accent-foreground hover:underline"
-    >
-      Download
-    </a>
-  );
-}
+import { DocumentsCard } from "./documents-card";
 
 export default async function ApplicationDetailPage({
   params,
@@ -78,23 +50,7 @@ export default async function ApplicationDetailPage({
 
           <Card>
             <CardContent>
-              <div className="flex flex-col gap-3">
-                <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Documents
-                </h3>
-                <div className="flex flex-col gap-2 text-[13px]">
-                  {DOCUMENT_KINDS.map(([kind, label]) => (
-                    <div key={kind} className="flex items-center justify-between">
-                      <span>{label}</span>
-                      <TailoredDocLink
-                        applicationId={application.id}
-                        docs={application.tailoredDocuments}
-                        kind={kind}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <DocumentsCard applicationId={application.id} docs={application.tailoredDocuments} />
             </CardContent>
           </Card>
         </div>
