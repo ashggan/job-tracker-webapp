@@ -30,8 +30,11 @@ function toScoreFitInput(app: {
 }
 
 export type TailorCoverLetterActionResult = { ok: true; body: string } | { ok: false; error: string };
+export type RetailorCoverLetterActionResult =
+  | { ok: true; body: string; docId: string }
+  | { ok: false; error: string };
 
-export async function retailorCoverLetterAction(applicationId: string): Promise<TailorCoverLetterActionResult> {
+export async function retailorCoverLetterAction(applicationId: string): Promise<RetailorCoverLetterActionResult> {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -42,12 +45,12 @@ export async function retailorCoverLetterAction(applicationId: string): Promise<
   if (!result.ok) return result;
 
   const version = await getNextVersion(applicationId, "cover_letter");
-  await prisma.tailoredDocument.create({
+  const doc = await prisma.tailoredDocument.create({
     data: { applicationId, kind: "cover_letter", version, contentJson: result.data },
   });
 
   revalidatePath(`/applications/${applicationId}`);
-  return { ok: true, body: result.data.body };
+  return { ok: true, body: result.data.body, docId: doc.id };
 }
 
 export async function reviseCoverLetterAction(
