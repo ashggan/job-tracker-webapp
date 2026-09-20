@@ -58,6 +58,65 @@ export async function createApplicationAction(
   redirect("/board");
 }
 
+const updateApplicationSchema = z.object({
+  jobTitle: z.string().trim().min(1, "Enter a job title").max(200),
+  company: z.string().trim().min(1, "Enter a company").max(200),
+  postingUrl: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : undefined))
+    .refine((v) => !v || /^https?:\/\//i.test(v), "Posting link must start with http:// or https://"),
+  location: z.string().trim().max(200).optional(),
+  deadline: z.string().trim().optional(),
+});
+
+export type UpdateApplicationState = { error?: string } | undefined;
+
+export async function updateApplicationAction(
+  applicationId: string,
+  _prevState: UpdateApplicationState,
+  formData: FormData
+): Promise<UpdateApplicationState> {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const parsed = updateApplicationSchema.safeParse({
+    jobTitle: formData.get("jobTitle"),
+    company: formData.get("company"),
+    postingUrl: formData.get("postingUrl") || undefined,
+    location: formData.get("location") || undefined,
+    deadline: formData.get("deadline") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  let deadline: Date | null = null;
+  if (parsed.data.deadline) {
+    deadline = new Date(parsed.data.deadline);
+    if (Number.isNaN(deadline.getTime())) {
+      return { error: "Deadline isn't a valid date — use a format like 2026-12-15, or clear it" };
+    }
+  }
+
+  const { count } = await prisma.application.updateMany({
+    where: { id: applicationId, userId: session.user.id },
+    data: {
+      jobTitle: parsed.data.jobTitle,
+      company: parsed.data.company,
+      postingUrl: parsed.data.postingUrl,
+      location: parsed.data.location,
+      deadline,
+    },
+  });
+  if (count === 0) return { error: "Application not found" };
+
+  revalidatePath(`/applications/${applicationId}`);
+  revalidatePath("/board");
+  revalidatePath("/table");
+}
+
 export async function updateStageAction(applicationId: string, toStage: Stage) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");

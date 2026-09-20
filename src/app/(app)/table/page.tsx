@@ -143,7 +143,11 @@ export default async function TablePage({
             {rows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>{row.dateApplied ? row.dateApplied.toLocaleDateString() : "—"}</TableCell>
-                <TableCell className="font-semibold">{row.jobTitle}</TableCell>
+                <TableCell className="font-semibold">
+                  <Link href={`/applications/${row.id}`} className="hover:underline">
+                    {row.jobTitle}
+                  </Link>
+                </TableCell>
                 <TableCell>{row.company}</TableCell>
                 <TableCell>
                   {row.postingUrl ? (
