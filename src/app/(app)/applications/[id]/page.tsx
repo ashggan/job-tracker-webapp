@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { HeaderSection } from "./header-section";
 import { NotesLog } from "./notes-log";
 import { StageHistory } from "./stage-history";
-import { FitScoreForm } from "./fit-score-form";
+import { FitScoreCard } from "./fit-score-card";
 import type { TailoredKind } from "@prisma/client";
 
 const DOCUMENT_KINDS: [TailoredKind, string][] = [
@@ -63,7 +63,7 @@ export default async function ApplicationDetailPage({
         <div className="flex flex-col gap-6">
           <Card>
             <CardContent>
-              <FitScoreForm
+              <FitScoreCard
                 applicationId={application.id}
                 fitScore={application.fitScore}
                 fitLabel={application.fitLabel}

@@ -47,10 +47,6 @@ export function FitScoreForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-        Fit assessment (manual)
-      </h3>
-
       <div className="flex gap-4">
         <Field label="Score (0-10)">
           <Input
