@@ -68,7 +68,7 @@ export function NotesLog({
         </form>
       )}
 
-      <ul className="flex flex-col gap-4">
+      <ul className="flex max-h-70 flex-col gap-4 overflow-y-auto">
         {notes.length === 0 && !adding && <li className="text-[13px] text-muted-foreground">No notes yet.</li>}
         {notes.map((note) => (
           <li key={note.id} className="text-[13px]">
