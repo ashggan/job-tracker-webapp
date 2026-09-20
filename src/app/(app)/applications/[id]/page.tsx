@@ -8,6 +8,7 @@ import { FitBadge } from "@/components/fit-badge";
 import { EditForm } from "./edit-form";
 import { NotesLog } from "./notes-log";
 import { StageHistory } from "./stage-history";
+import { FitScoreForm } from "./fit-score-form";
 import type { TailoredKind } from "@prisma/client";
 
 const DOCUMENT_KINDS: [TailoredKind, string][] = [
@@ -90,6 +91,17 @@ export default async function ApplicationDetailPage({
           ))}
         </div>
       </div>
+
+      <hr className="border-border" />
+
+      <FitScoreForm
+        applicationId={application.id}
+        fitScore={application.fitScore}
+        fitLabel={application.fitLabel}
+        fitStrengths={(application.fitStrengths as string[] | null) ?? []}
+        fitGaps={(application.fitGaps as string[] | null) ?? []}
+        fitRecommendation={application.fitRecommendation}
+      />
 
       <hr className="border-border" />
 

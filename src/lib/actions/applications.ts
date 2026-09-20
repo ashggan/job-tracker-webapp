@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { Stage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { STAGE_ORDER } from "@/lib/stages";
+import { STAGE_ORDER, FIT_LABEL_ORDER } from "@/lib/stages";
 
 const createApplicationSchema = z.object({
   jobTitle: z.string().trim().min(1, "Enter a job title").max(200),
@@ -114,6 +114,87 @@ export async function updateApplicationAction(
 
   revalidatePath(`/applications/${applicationId}`);
   revalidatePath("/board");
+  revalidatePath("/table");
+}
+
+const setFitScoreSchema = z.object({
+  fitScore: z.string().trim().optional(),
+  fitLabel: z.string().trim().optional(),
+  fitStrengths: z.string().trim().optional(),
+  fitGaps: z.string().trim().optional(),
+  fitRecommendation: z.string().trim().max(500).optional(),
+});
+
+function linesToArray(text?: string): string[] {
+  return (text ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+export type SetFitScoreState = { error?: string } | undefined;
+
+export async function setFitScoreAction(
+  applicationId: string,
+  _prevState: SetFitScoreState,
+  formData: FormData
+): Promise<SetFitScoreState> {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const parsed = setFitScoreSchema.safeParse({
+    fitScore: formData.get("fitScore") || undefined,
+    fitLabel: formData.get("fitLabel") || undefined,
+    fitStrengths: formData.get("fitStrengths") || undefined,
+    fitGaps: formData.get("fitGaps") || undefined,
+    fitRecommendation: formData.get("fitRecommendation") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  // Clearing the label clears the whole manual assessment.
+  if (!parsed.data.fitLabel) {
+    const { count } = await prisma.application.updateMany({
+      where: { id: applicationId, userId: session.user.id },
+      data: {
+        fitScore: null,
+        fitLabel: null,
+        fitStrengths: [],
+        fitGaps: [],
+        fitRecommendation: null,
+        fitGeneratedAt: null,
+      },
+    });
+    if (count === 0) return { error: "Application not found" };
+    revalidatePath(`/applications/${applicationId}`);
+    revalidatePath("/table");
+    return;
+  }
+
+  if (!FIT_LABEL_ORDER.includes(parsed.data.fitLabel as (typeof FIT_LABEL_ORDER)[number])) {
+    return { error: "Invalid fit label" };
+  }
+
+  const fitScore = Number(parsed.data.fitScore);
+  if (!Number.isInteger(fitScore) || fitScore < 0 || fitScore > 10) {
+    return { error: "Fit score must be a whole number from 0 to 10" };
+  }
+
+  const { count } = await prisma.application.updateMany({
+    where: { id: applicationId, userId: session.user.id },
+    data: {
+      fitScore,
+      fitLabel: parsed.data.fitLabel as (typeof FIT_LABEL_ORDER)[number],
+      fitStrengths: linesToArray(parsed.data.fitStrengths),
+      fitGaps: linesToArray(parsed.data.fitGaps),
+      fitRecommendation: parsed.data.fitRecommendation || null,
+      fitGeneratedAt: null, // manual entry, not AI-generated
+    },
+  });
+  if (count === 0) return { error: "Application not found" };
+
+  revalidatePath(`/applications/${applicationId}`);
   revalidatePath("/table");
 }
 
