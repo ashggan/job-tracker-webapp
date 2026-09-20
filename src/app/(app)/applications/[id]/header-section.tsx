@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StageSelect } from "@/components/stage-select";
 import type { Stage } from "@prisma/client";
@@ -51,6 +51,10 @@ export function HeaderSection({
             <StageSelect applicationId={applicationId} stage={stage} />
             <Button variant="outline" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>
               Edit
+            </Button>
+            <Button nativeButton={false} render={<Link href="#tailor-with-ai" />}>
+              <Sparkles data-icon="inline-start" />
+              Tailor with AI
             </Button>
           </div>
         </div>
