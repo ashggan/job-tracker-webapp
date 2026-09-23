@@ -36,5 +36,5 @@ export async function addNoteAction(
   });
 
   revalidatePath(`/applications/${applicationId}`);
-  revalidatePath("/table");
+  revalidatePath("/job-applications");
 }

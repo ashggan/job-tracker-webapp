@@ -15,12 +15,10 @@ export function ApplicationsView({
   defaultView,
   board,
   table,
-  sources,
 }: {
   defaultView: BoardTableView;
   board: ReactNode;
   table: ReactNode;
-  sources: string[];
 }) {
   const [view, setView] = useState<BoardTableView>(defaultView);
 
@@ -48,7 +46,7 @@ export function ApplicationsView({
 
   return (
     <div className="flex flex-col">
-      <TableFilters sources={sources} view={view} onViewChange={setView} />
+      <TableFilters view={view} onViewChange={setView} />
       {table}
     </div>
   );
