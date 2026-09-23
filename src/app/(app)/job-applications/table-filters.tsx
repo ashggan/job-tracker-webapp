@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Plus, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -66,21 +66,7 @@ export function TableFilters({
   }, []);
 
   return (
-    <>
-      <form action="/applications/new" className="flex items-center gap-3 border-b border-border px-7 py-4">
-        <Input
-          name="url"
-          placeholder="Paste a job URL or add manually"
-          title="Prefills the posting link on the add-job form"
-          className="max-w-70"
-        />
-        <Button type="submit">
-          <Plus />
-          Add job
-        </Button>
-      </form>
-
-      <div className="flex flex-wrap items-center gap-2.5 border-b border-border px-7 py-4">
+    <div className="flex flex-wrap items-center gap-2.5 border-b border-border px-7 py-4">
       <Input
         placeholder="Search jobs, companies..."
         className="max-w-58"
@@ -143,7 +129,6 @@ export function TableFilters({
         Export
       </a>
       <BoardTableToggle view={view} onChange={onViewChange} />
-      </div>
-    </>
+    </div>
   );
 }

@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Plus } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { BoardTableToggle, type BoardTableView } from "@/components/board-table-toggle";
 import { TableFilters } from "./table-filters";
 
@@ -25,20 +22,10 @@ export function ApplicationsView({
   if (view === "board") {
     return (
       <div className="flex flex-col">
-        <form action="/applications/new" className="flex items-center gap-3 border-b border-border px-7 py-4">
-          <Input
-            name="url"
-            placeholder="Paste a job URL or add manually"
-            title="Prefills the posting link on the add-job form"
-            className="max-w-70"
-          />
-          <Button type="submit">
-            <Plus />
-            Add job
-          </Button>
+        <div className="flex items-center gap-3 border-b border-border px-7 py-4">
           <div className="flex-1" />
           <BoardTableToggle view={view} onChange={setView} />
-        </form>
+        </div>
         {board}
       </div>
     );
