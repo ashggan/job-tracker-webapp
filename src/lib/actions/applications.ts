@@ -7,6 +7,7 @@ import type { Stage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { STAGE_ORDER, FIT_LABEL_ORDER } from "@/lib/stages";
+import { findDuplicateApplications } from "@/lib/duplicate-check";
 
 const createApplicationSchema = z.object({
   jobTitle: z.string().trim().min(1, "Enter a job title").max(200),
@@ -37,6 +38,18 @@ export async function createApplicationAction(
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const duplicates = await findDuplicateApplications(session.user.id, {
+    postingUrl: parsed.data.postingUrl,
+    company: parsed.data.company,
+    jobTitle: parsed.data.jobTitle,
+  });
+  if (duplicates.length > 0) {
+    const match = duplicates[0];
+    return {
+      error: `You already have an application for ${match.jobTitle} at ${match.company} (added ${match.createdAt.toLocaleDateString()}) — edit that one instead of adding a duplicate.`,
+    };
   }
 
   const application = await prisma.application.create({
