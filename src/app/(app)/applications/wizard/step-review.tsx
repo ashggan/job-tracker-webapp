@@ -41,7 +41,7 @@ export function StepReview({
   const [niceToHaves, setNiceToHaves] = useState(extracted.niceToHaves.join("\n"));
   const [keywords, setKeywords] = useState(extracted.keywords.join("\n"));
   const [location, setLocation] = useState(extracted.location ?? "");
-  const [deadline, setDeadline] = useState(extracted.deadline ?? defaultDeadline());
+  const [deadline, setDeadline] = useState(extracted.deadline?.trim() || defaultDeadline());
   const [url, setUrl] = useState(postingUrl ?? "");
 
   return (

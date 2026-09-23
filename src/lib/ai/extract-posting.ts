@@ -13,6 +13,11 @@ const ROUGH_COST_PER_1M_TOKENS: Record<string, number> = {
   google: 1,
 };
 
+// Shared cap: both what the model analyzes and what's stored/shown as the
+// raw description, so the text a user sees in Review always matches what
+// requirements/keywords/deadline were actually extracted from.
+const MAX_SOURCE_TEXT_CHARS = 20_000;
+
 const extractedPostingSchema = z.object({
   jobTitle: z.string(),
   company: z.string(),
@@ -120,7 +125,7 @@ export async function extractPostingDetails(
         "strongly implies a cover letter is wanted. For keywords, list 5-15 concise (1-4 " +
         "word) ATS-style terms this posting emphasizes — specific skills, technologies, " +
         "certifications, or methodologies, not generic phrases.\n\n" +
-        sourceText.slice(0, 15000),
+        sourceText.slice(0, MAX_SOURCE_TEXT_CHARS),
       abortSignal: AbortSignal.timeout(30_000),
     });
 
@@ -135,7 +140,7 @@ export async function extractPostingDetails(
       },
     });
 
-    return { ok: true, data: { ...object, description: sourceText.slice(0, 20_000) } };
+    return { ok: true, data: { ...object, description: sourceText.slice(0, MAX_SOURCE_TEXT_CHARS) } };
   } catch (error) {
     console.error("[extractPostingDetails]", error);
     return {
