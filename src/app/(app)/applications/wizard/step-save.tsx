@@ -43,7 +43,7 @@ export function StepSave({
           extras,
         });
         if (result?.error) setError(result.error);
-        // On success the action redirects to /board — nothing else to do here.
+        // On success the action redirects to /table — nothing else to do here.
       } catch (error) {
         // A successful save's redirect() surfaces here as a rejected promise
         // (Next.js's client action runtime hands it to RedirectBoundary) —

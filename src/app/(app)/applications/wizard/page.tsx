@@ -14,11 +14,11 @@ export default async function WizardPage() {
   return (
     <div className="mx-auto max-w-2xl px-7 py-8">
       <Link
-        href="/board"
+        href="/table"
         className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" />
-        Back to board
+        Back to applications
       </Link>
       <h2 className="mb-1 text-2xl">Add a job, guided</h2>
       <p className="mb-6 text-sm text-muted-foreground">

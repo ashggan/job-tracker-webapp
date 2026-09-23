@@ -1,18 +1,14 @@
-import { Plus, SlidersHorizontal, Clock } from "lucide-react";
+import { Plus, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BoardTableToggle } from "@/components/board-table-toggle";
 import { StageSelect } from "@/components/stage-select";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
 import { FitBadge } from "@/components/fit-badge";
-import { auth } from "@/lib/auth";
-import { getBoardColumns } from "@/lib/queries/applications";
 import { STAGE_LABELS, daysSince } from "@/lib/stages";
+import type { getBoardColumns } from "@/lib/queries/applications";
 
-export default async function BoardPage() {
-  const session = await auth();
-  const columns = await getBoardColumns(session!.user.id);
-
+export function BoardView({ columns }: { columns: Awaited<ReturnType<typeof getBoardColumns>> }) {
   return (
     <div className="flex flex-col">
       <form action="/applications/new" className="flex items-center gap-3 border-b border-border px-7 py-4">
@@ -28,10 +24,6 @@ export default async function BoardPage() {
         </Button>
         <div className="flex-1" />
         <BoardTableToggle />
-        <Button variant="outline" disabled title="Board filters ship in a later milestone">
-          <SlidersHorizontal />
-          Filters
-        </Button>
       </form>
 
       <div className="flex gap-4 overflow-x-auto px-7 py-5.5">
