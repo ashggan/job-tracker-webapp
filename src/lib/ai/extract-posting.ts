@@ -13,18 +13,26 @@ const ROUGH_COST_PER_1M_TOKENS: Record<string, number> = {
   google: 1,
 };
 
+// Shared cap: both what the model analyzes and what's stored/shown as the
+// raw description, so the text a user sees in Review always matches what
+// requirements/keywords/deadline were actually extracted from.
+const MAX_SOURCE_TEXT_CHARS = 20_000;
+
 const extractedPostingSchema = z.object({
   jobTitle: z.string(),
   company: z.string(),
-  description: z.string(),
   requirements: z.array(z.string()),
   niceToHaves: z.array(z.string()),
+  keywords: z.array(z.string()), // ATS-style terms/skills the posting emphasizes
   location: z.string().nullable(), // as stated in the posting, or null if not stated — never inferred
   deadline: z.string().nullable(), // ISO date (YYYY-MM-DD), or null if not stated — never inferred
   wantsCoverLetter: z.boolean(),
 });
 
-export type ExtractedPosting = z.infer<typeof extractedPostingSchema>;
+// `description` isn't part of the LLM schema above — it's spliced in
+// post-hoc from the raw source text (see extractPostingDetails) rather than
+// AI-summarized, so nothing gets lost that the model's summary might drop.
+export type ExtractedPosting = z.infer<typeof extractedPostingSchema> & { description: string };
 
 export type ExtractPostingResult =
   | { ok: true; data: ExtractedPosting }
@@ -114,8 +122,10 @@ export async function extractPostingDetails(
         "guess or infer one. If the posting states an application deadline, return it as an " +
         "ISO date (YYYY-MM-DD) — if it doesn't state one, return null; never guess or infer " +
         "one. Set wantsCoverLetter to true only if the posting explicitly asks for or " +
-        "strongly implies a cover letter is wanted.\n\n" +
-        sourceText.slice(0, 15000),
+        "strongly implies a cover letter is wanted. For keywords, list 5-15 concise (1-4 " +
+        "word) ATS-style terms this posting emphasizes — specific skills, technologies, " +
+        "certifications, or methodologies, not generic phrases.\n\n" +
+        sourceText.slice(0, MAX_SOURCE_TEXT_CHARS),
       abortSignal: AbortSignal.timeout(30_000),
     });
 
@@ -130,7 +140,7 @@ export async function extractPostingDetails(
       },
     });
 
-    return { ok: true, data: object };
+    return { ok: true, data: { ...object, description: sourceText.slice(0, MAX_SOURCE_TEXT_CHARS) } };
   } catch (error) {
     console.error("[extractPostingDetails]", error);
     return {
