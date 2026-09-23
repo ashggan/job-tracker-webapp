@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { BoardTableToggle, type BoardTableView } from "@/components/board-table-toggle";
 import { STAGE_LABELS, STAGE_ORDER, FIT_LABEL_ORDER, FIT_META } from "@/lib/stages";
+import { cn } from "cn";
 
 const DAY_OPTIONS = [
   { value: "all", label: "Date: All time" },
@@ -118,6 +121,13 @@ export function TableFilters({
       </Select>
 
       <div className="flex-1" />
+      <a
+        href={`/api/applications/export?${searchParams.toString()}`}
+        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+      >
+        <Download />
+        Export
+      </a>
       <BoardTableToggle view={view} onChange={onViewChange} />
     </div>
   );
