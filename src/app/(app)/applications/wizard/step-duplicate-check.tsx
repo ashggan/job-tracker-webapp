@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { checkDuplicatesAction } from "@/lib/actions/wizard";
@@ -96,9 +97,20 @@ export function StepDuplicateCheck({
           </p>
           <ul className="flex flex-col gap-2">
             {matches.map((match) => (
-              <li key={match.id} className="rounded-lg border border-border px-3 py-2 text-[13px]">
-                <span className="font-semibold">{match.jobTitle}</span> at {match.company} —{" "}
-                {STAGE_LABELS[match.stage]}
+              <li
+                key={match.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-[13px]"
+              >
+                <span>
+                  <span className="font-semibold">{match.jobTitle}</span> at {match.company} —{" "}
+                  {STAGE_LABELS[match.stage]}
+                </span>
+                <Link
+                  href={`/applications/${match.id}`}
+                  className="shrink-0 text-accent-foreground hover:underline"
+                >
+                  View
+                </Link>
               </li>
             ))}
           </ul>
@@ -124,6 +136,11 @@ export function StepDuplicateCheck({
         <Button type="button" variant="outline" onClick={onBack}>
           Back
         </Button>
+        {matches.length > 0 && (
+          <Button type="button" variant="outline" nativeButton={false} render={<Link href="/job-applications" />}>
+            Exit
+          </Button>
+        )}
         <Button type="button" size="lg" onClick={() => onContinue(extras)}>
           {matches.length === 0 ? "Continue" : "Continue anyway"}
         </Button>
