@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
     q: params.get("q") ?? undefined,
     stage: (params.get("stage") as Stage) || undefined,
     fitLabel: (params.get("fit") as FitLabel) || undefined,
-    source: params.get("source") ?? undefined,
     days: days && days !== "all" ? Number(days) : undefined,
     sort: (params.get("sort") as TableFilters["sort"]) ?? "dateApplied",
     dir: (params.get("dir") as TableFilters["dir"]) ?? "desc",
