@@ -18,7 +18,6 @@ export type TableFilters = {
   q?: string;
   stage?: Stage;
   fitLabel?: FitLabel;
-  source?: string;
   days?: number;
   sort?: "dateApplied" | "jobTitle" | "company" | "fitScore" | "stage" | "deadline";
   dir?: "asc" | "desc";
@@ -29,7 +28,6 @@ export async function getTableRows(userId: string, filters: TableFilters) {
 
   if (filters.stage) where.stage = filters.stage;
   if (filters.fitLabel) where.fitLabel = filters.fitLabel;
-  if (filters.source) where.source = filters.source;
   if (filters.days) {
     where.dateFound = { gte: new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000) };
   }
@@ -64,15 +62,6 @@ export async function getTableRows(userId: string, filters: TableFilters) {
       tailoredDocuments: { orderBy: { version: "desc" }, select: { id: true, kind: true } },
     },
   });
-}
-
-export async function getDistinctSources(userId: string): Promise<string[]> {
-  const rows = await prisma.application.findMany({
-    where: { userId },
-    select: { source: true },
-    distinct: ["source"],
-  });
-  return rows.map((r) => r.source).sort();
 }
 
 export async function getApplicationForUser(userId: string, id: string) {
