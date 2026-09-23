@@ -141,6 +141,7 @@ model Application {
   descriptionText String? @db.Text // full posting text, from guided-add extraction
   requirements   Json?    // string[] — required quals, as extracted
   niceToHaves    Json?    // string[]
+  keywords       Json?    // string[] — ATS-style terms the posting emphasizes
   deadline       DateTime? // null if the posting didn't state one
 
   rawListingId String?

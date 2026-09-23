@@ -16,6 +16,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+// Used to seed the Deadline field when the posting didn't state one, so it's
+// never silently blank -- still fully editable/clearable afterward.
+function defaultDeadline(): string {
+  const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
 export function StepReview({
   extracted,
   postingUrl,
@@ -32,8 +39,9 @@ export function StepReview({
   const [description, setDescription] = useState(extracted.description);
   const [requirements, setRequirements] = useState(extracted.requirements.join("\n"));
   const [niceToHaves, setNiceToHaves] = useState(extracted.niceToHaves.join("\n"));
+  const [keywords, setKeywords] = useState(extracted.keywords.join("\n"));
   const [location, setLocation] = useState(extracted.location ?? "");
-  const [deadline, setDeadline] = useState(extracted.deadline ?? "");
+  const [deadline, setDeadline] = useState(extracted.deadline ?? defaultDeadline());
   const [url, setUrl] = useState(postingUrl ?? "");
 
   return (
@@ -60,6 +68,10 @@ export function StepReview({
 
       <Field label="Nice to have (one per line)">
         <Textarea rows={3} value={niceToHaves} onChange={(e) => setNiceToHaves(e.target.value)} />
+      </Field>
+
+      <Field label="Keywords (one per line)">
+        <Textarea rows={3} value={keywords} onChange={(e) => setKeywords(e.target.value)} />
       </Field>
 
       <Field label="Location">
@@ -95,6 +107,7 @@ export function StepReview({
                 description,
                 requirements: requirements.split("\n").map((r) => r.trim()).filter(Boolean),
                 niceToHaves: niceToHaves.split("\n").map((n) => n.trim()).filter(Boolean),
+                keywords: keywords.split("\n").map((k) => k.trim()).filter(Boolean),
                 location: location.trim() || null,
                 deadline: deadline.trim() || null,
               },

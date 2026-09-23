@@ -182,6 +182,7 @@ export async function createApplicationFromWizardAction(
           descriptionText: input.extracted.description,
           requirements: input.extracted.requirements,
           niceToHaves: input.extracted.niceToHaves,
+          keywords: input.extracted.keywords,
           deadline: deadline.value,
           stage: "wishlist",
           fitScore: input.fit?.fitScore,
