@@ -5,7 +5,7 @@ const IV_LENGTH = 12;
 
 function getKey(): Buffer {
   const hex = process.env.ENCRYPTION_KEY;
-  if (!hex || hex.length !== 64) {
+  if (!hex || !/^[0-9a-f]{64}$/i.test(hex)) {
     throw new Error("ENCRYPTION_KEY must be a 64-character hex string (32 bytes)");
   }
   return Buffer.from(hex, "hex");
@@ -20,8 +20,9 @@ export function encrypt(plaintext: string): string {
 }
 
 export function decrypt(payload: string): string {
-  const [ivHex, authTagHex, ciphertextHex] = payload.split(":");
-  if (!ivHex || !authTagHex || !ciphertextHex) {
+  const parts = payload.split(":");
+  const [ivHex, authTagHex, ciphertextHex] = parts;
+  if (parts.length !== 3 || ivHex === undefined || authTagHex === undefined || ciphertextHex === undefined) {
     throw new Error("Malformed encrypted payload");
   }
   const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivHex, "hex"));
