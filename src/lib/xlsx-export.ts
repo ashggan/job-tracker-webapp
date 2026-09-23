@@ -25,6 +25,7 @@ const COLUMNS: Partial<ExcelJS.Column>[] = [
   { header: "CV Tailored", key: "cvTailored", width: 12 },
   { header: "Cover Letter Tailored", key: "coverLetterTailored", width: 18 },
   { header: "Prep Notes", key: "prepNotes", width: 12 },
+  { header: "Perks Summary", key: "perksSummary", width: 14 },
   { header: "Latest Note", key: "latestNote", width: 40 },
 ];
 
@@ -60,6 +61,7 @@ export async function renderApplicationsXlsx(
         ? "Yes"
         : "No",
       prepNotes: app.tailoredDocuments.some((d) => d.kind === "prep_notes") ? "Yes" : "No",
+      perksSummary: app.tailoredDocuments.some((d) => d.kind === "perks") ? "Yes" : "No",
       latestNote: app.notes[0]?.body ?? null,
     });
 

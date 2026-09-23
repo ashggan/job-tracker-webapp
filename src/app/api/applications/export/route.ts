@@ -23,15 +23,20 @@ export async function GET(request: NextRequest) {
     dir: (params.get("dir") as TableFilters["dir"]) ?? "desc",
   };
 
-  const rows = await getTableRows(session.user.id, filters);
-  const buffer = await renderApplicationsXlsx(rows);
+  try {
+    const rows = await getTableRows(session.user.id, filters);
+    const buffer = await renderApplicationsXlsx(rows);
 
-  const filename = `Job Applications - ${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const filename = `Job Applications - ${new Date().toISOString().slice(0, 10)}.xlsx`;
 
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
-  });
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
+  } catch (error) {
+    console.error("[GET /api/applications/export]", error);
+    return NextResponse.json({ error: "Couldn't generate the export" }, { status: 500 });
+  }
 }

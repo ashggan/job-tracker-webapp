@@ -86,7 +86,10 @@ describe("renderApplicationsXlsx", () => {
   it("flags which tailored documents exist for the application", async () => {
     const buffer = await renderApplicationsXlsx([
       makeApplication({
-        tailoredDocuments: [{ id: "d1", kind: "cv" }],
+        tailoredDocuments: [
+          { id: "d1", kind: "cv" },
+          { id: "d2", kind: "perks" },
+        ],
       }),
     ]);
     const { cell } = await readBack(buffer);
@@ -94,6 +97,7 @@ describe("renderApplicationsXlsx", () => {
     expect(cell("CV Tailored", 2).value).toBe("Yes");
     expect(cell("Cover Letter Tailored", 2).value).toBe("No");
     expect(cell("Prep Notes", 2).value).toBe("No");
+    expect(cell("Perks Summary", 2).value).toBe("Yes");
   });
 
   it("writes the posting URL as a hyperlink", async () => {
