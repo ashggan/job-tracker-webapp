@@ -55,7 +55,7 @@ export async function createApplicationAction(
     data: { applicationId: application.id, fromStage: null, toStage: "wishlist" },
   });
 
-  redirect("/table");
+  redirect("/job-applications");
 }
 
 const updateApplicationSchema = z.object({
@@ -113,7 +113,7 @@ export async function updateApplicationAction(
   if (count === 0) return { error: "Application not found" };
 
   revalidatePath(`/applications/${applicationId}`);
-  revalidatePath("/table");
+  revalidatePath("/job-applications");
 }
 
 const setFitScoreSchema = z.object({
@@ -167,7 +167,7 @@ export async function setFitScoreAction(
     });
     if (count === 0) return { error: "Application not found" };
     revalidatePath(`/applications/${applicationId}`);
-    revalidatePath("/table");
+    revalidatePath("/job-applications");
     return;
   }
 
@@ -194,7 +194,7 @@ export async function setFitScoreAction(
   if (count === 0) return { error: "Application not found" };
 
   revalidatePath(`/applications/${applicationId}`);
-  revalidatePath("/table");
+  revalidatePath("/job-applications");
 }
 
 export async function updateInterviewPrepNotesAction(
@@ -241,7 +241,7 @@ export async function updateStageAction(applicationId: string, toStage: Stage) {
     }),
   ]);
 
-  revalidatePath("/table");
+  revalidatePath("/job-applications");
 }
 
 export async function deleteApplicationAction(applicationId: string) {
@@ -252,5 +252,5 @@ export async function deleteApplicationAction(applicationId: string) {
     where: { id: applicationId, userId: session.user.id },
   });
 
-  revalidatePath("/table");
+  revalidatePath("/job-applications");
 }

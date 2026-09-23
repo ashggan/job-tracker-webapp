@@ -15,7 +15,6 @@ import { auth } from "@/lib/auth";
 import {
   getBoardColumns,
   getTableRows,
-  getDistinctSources,
   type TableFilters as Filters,
 } from "@/lib/queries/applications";
 import { isDueSoon } from "@/lib/stages";
@@ -69,7 +68,7 @@ function SortHeader({
   const Icon = isActive ? (currentDir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
 
   return (
-    <Link href={`/table?${params.toString()}`} className="inline-flex items-center gap-1 hover:text-foreground">
+    <Link href={`/job-applications?${params.toString()}`} className="inline-flex items-center gap-1 hover:text-foreground">
       {label}
       <Icon className="size-3" />
     </Link>
@@ -89,20 +88,18 @@ export default async function TablePage({
     q: params.q,
     stage: params.stage as Stage | undefined,
     fitLabel: params.fit as FitLabel | undefined,
-    source: params.source,
     days: params.days && params.days !== "all" ? Number(params.days) : undefined,
     sort: (params.sort as Filters["sort"]) ?? "dateApplied",
     dir: (params.dir as Filters["dir"]) ?? "desc",
   };
 
   // Board and Table are two components now, switched locally by
-  // ApplicationsView -- all three fetches happen up front so the toggle
-  // never needs a server round-trip. ?view=board only picks the initial
-  // view (e.g. for a bookmarked link).
-  const [columns, rows, sources] = await Promise.all([
+  // ApplicationsView -- both fetches happen up front so the toggle never
+  // needs a server round-trip. ?view=board only picks the initial view
+  // (e.g. for a bookmarked link).
+  const [columns, rows] = await Promise.all([
     getBoardColumns(userId),
     getTableRows(userId, filters),
-    getDistinctSources(userId),
   ]);
 
   const tableContent = (
@@ -212,7 +209,6 @@ export default async function TablePage({
       defaultView={params.view === "board" ? "board" : "table"}
       board={<BoardView columns={columns} />}
       table={tableContent}
-      sources={sources}
     />
   );
 }

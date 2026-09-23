@@ -23,11 +23,9 @@ const DAY_OPTIONS = [
 ];
 
 export function TableFilters({
-  sources,
   view,
   onViewChange,
 }: {
-  sources: string[];
   view: BoardTableView;
   onViewChange: (view: BoardTableView) => void;
 }) {
@@ -47,10 +45,6 @@ export function TableFilters({
   const fitItems: Record<string, React.ReactNode> = {
     all: "Fit: All",
     ...Object.fromEntries(FIT_LABEL_ORDER.map((f) => [f, FIT_META[f].label])),
-  };
-  const sourceItems: Record<string, React.ReactNode> = {
-    all: "Source: All",
-    ...Object.fromEntries(sources.map((s) => [s, s === "manual" ? "Manual" : s])),
   };
   const dayItems: Record<string, React.ReactNode> = Object.fromEntries(
     DAY_OPTIONS.map((o) => [o.value, o.label])
@@ -121,20 +115,6 @@ export function TableFilters({
           {FIT_LABEL_ORDER.map((f) => (
             <SelectItem key={f} value={f}>
               {FIT_META[f].label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select items={sourceItems} value={searchParams.get("source") ?? "all"} onValueChange={(v) => updateParam("source", v ?? "all")}>
-        <SelectTrigger className="w-40 rounded-sm">
-          <SelectValue placeholder="Source: All" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Source: All</SelectItem>
-          {sources.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s === "manual" ? "Manual" : s}
             </SelectItem>
           ))}
         </SelectContent>

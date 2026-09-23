@@ -31,7 +31,7 @@ export async function signupAction(
   await prisma.user.create({ data: { name, email, passwordHash } });
 
   try {
-    await signIn("credentials", { email, password, redirectTo: "/table" });
+    await signIn("credentials", { email, password, redirectTo: "/job-applications" });
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Account created, but sign-in failed — try logging in." };

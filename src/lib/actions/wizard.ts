@@ -249,6 +249,6 @@ export async function createApplicationFromWizardAction(
     return { error: "Couldn't save this application — try again in a moment" };
   }
 
-  revalidatePath("/table");
-  redirect("/table");
+  revalidatePath("/job-applications");
+  redirect("/job-applications");
 }

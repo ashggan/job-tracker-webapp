@@ -13,10 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/(app)/actions";
 
-// Board view lives at /table?view=board now, not its own route -- pathname
-// is "/table" either way, so a plain startsWith match is enough.
+// Board view lives at /job-applications?view=board now, not its own route --
+// pathname is "/job-applications" either way, so a plain startsWith match is
+// enough.
 const LINKS = [
-  { href: "/table", label: "Applications" },
+  { href: "/job-applications", label: "Job Applications" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },
@@ -27,7 +28,7 @@ export function NavBar({ initials }: { initials: string }) {
 
   return (
     <header className="flex items-center gap-5 border-b border-border px-7 py-4.5">
-      <Link href="/table" className="font-heading text-[19px] font-bold text-accent-foreground">
+      <Link href="/job-applications" className="font-heading text-[19px] font-bold text-accent-foreground">
         JOTA
       </Link>
       <nav className="flex items-center gap-1">
