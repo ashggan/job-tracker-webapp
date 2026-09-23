@@ -1,4 +1,6 @@
-import { Clock } from "lucide-react";
+import { Plus, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { BoardTableToggle } from "@/components/board-table-toggle";
 import { StageSelect } from "@/components/stage-select";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
@@ -9,9 +11,20 @@ import type { getBoardColumns } from "@/lib/queries/applications";
 export function BoardView({ columns }: { columns: Awaited<ReturnType<typeof getBoardColumns>> }) {
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-end border-b border-border px-7 py-4">
+      <form action="/applications/new" className="flex items-center gap-3 border-b border-border px-7 py-4">
+        <Input
+          name="url"
+          placeholder="Paste a job URL or add manually"
+          title="Prefills the posting link on the add-job form"
+          className="max-w-70"
+        />
+        <Button type="submit">
+          <Plus />
+          Add job
+        </Button>
+        <div className="flex-1" />
         <BoardTableToggle />
-      </div>
+      </form>
 
       <div className="flex gap-4 overflow-x-auto px-7 py-5.5">
         {columns.map(({ stage, jobs }) => (
