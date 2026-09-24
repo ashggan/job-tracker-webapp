@@ -4,6 +4,7 @@ import type { AIAction, LlmProvider } from "@prisma/client";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { loadCandidateContext } from "@/lib/ai/candidate-context";
+import { wrapUntrustedBlock } from "@/lib/ai/untrusted-content";
 import { resumeSectionsSchema } from "@/lib/ai/extract-resume-sections";
 import { prisma } from "@/lib/prisma";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
@@ -74,7 +75,7 @@ export type TailorCoverLetterResult =
   | { ok: false; error: string };
 
 function jobContext(posting: ScoreFitInput): string {
-  return [
+  const raw = [
     `Job title: ${posting.jobTitle}`,
     `Company: ${posting.company}`,
     `Description: ${posting.descriptionText}`,
@@ -85,6 +86,7 @@ function jobContext(posting: ScoreFitInput): string {
   ]
     .filter(Boolean)
     .join("\n\n");
+  return wrapUntrustedBlock("job_posting", raw);
 }
 
 export async function logUsage(

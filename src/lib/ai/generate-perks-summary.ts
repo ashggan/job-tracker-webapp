@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
+import { wrapUntrustedBlock } from "@/lib/ai/untrusted-content";
 import { logUsage } from "@/lib/ai/tailor-cv";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
 
@@ -27,9 +28,12 @@ export async function generatePerksSummary(
         "include what the posting actually states — never guess or infer a figure or perk " +
         "it doesn't mention. If the posting states none of this, say so plainly instead of " +
         "inventing anything.\n\n" +
-        `Job title: ${posting.jobTitle}\n` +
-        `Company: ${posting.company}\n` +
-        `Description: ${posting.descriptionText}`,
+        wrapUntrustedBlock(
+          "job_posting",
+          `Job title: ${posting.jobTitle}\n` +
+            `Company: ${posting.company}\n` +
+            `Description: ${posting.descriptionText}`
+        ),
       abortSignal: AbortSignal.timeout(30_000),
     });
 
