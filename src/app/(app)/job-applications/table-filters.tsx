@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Download } from "lucide-react";
+import Link from "next/link";
+import { Download, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -121,6 +122,10 @@ export function TableFilters({
       </Select>
 
       <div className="flex-1" />
+      <Link href="/applications/import" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+        <Upload />
+        Import
+      </Link>
       <a
         href={`/api/applications/export?${searchParams.toString()}`}
         className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
