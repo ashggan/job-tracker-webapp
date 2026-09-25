@@ -5,6 +5,7 @@ import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { loadCandidateContext } from "@/lib/ai/candidate-context";
 import { resumeSectionsSchema } from "@/lib/ai/extract-resume-sections";
+import { stripFabricatedContent } from "@/lib/ai/validate-tailored-content";
 import { prisma } from "@/lib/prisma";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
 
@@ -140,13 +141,15 @@ export async function tailorCv(userId: string, posting: ScoreFitInput): Promise<
 
     await logUsage(userId, "tailor_cv", resolved.provider, usage.totalTokens ?? 0);
 
+    const validated = stripFabricatedContent(object, sections);
+
     return {
       ok: true,
       data: {
         header: sections.header,
-        summary: object.summary,
-        experience: object.experience,
-        skills: object.skills,
+        summary: validated.summary,
+        experience: validated.experience,
+        skills: validated.skills,
         languages: sections.languages,
         education: sections.education,
         additionalSections: sections.additionalSections,
