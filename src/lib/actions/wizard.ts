@@ -20,6 +20,7 @@ import { renderTailoredDocumentDocx } from "@/lib/docx-export";
 import { generatePrepNotes } from "@/lib/ai/generate-prep-notes";
 import { generatePerksSummary } from "@/lib/ai/generate-perks-summary";
 import { discardWizardDraft } from "@/lib/wizard/draft";
+import { parseOptionalDate } from "@/lib/dates";
 import type { GenerationExtras } from "@/app/(app)/applications/wizard/step-duplicate-check";
 import type { TailoredKind } from "@prisma/client";
 
@@ -136,16 +137,6 @@ function toScoreFitInput(extracted: ExtractedPosting): ScoreFitInput {
   };
 }
 
-// The Deadline field in step-review.tsx is freeform text (a placeholder hint,
-// not enforced format), so a value like "ASAP" must be caught here rather
-// than handed to Prisma raw — an invalid Date would otherwise fail the whole
-// save transaction with a generic, unhelpful error.
-function parseDeadline(raw: string | null): { ok: true; value: Date | null } | { ok: false } {
-  if (!raw) return { ok: true, value: null };
-  const date = new Date(raw);
-  return Number.isNaN(date.getTime()) ? { ok: false } : { ok: true, value: date };
-}
-
 export async function createApplicationFromWizardAction(
   input: SaveApplicationInput
 ): Promise<{ error: string } | undefined> {
@@ -153,7 +144,7 @@ export async function createApplicationFromWizardAction(
   if (!session?.user?.id) return { error: "Sign in to use this feature" };
   const userId = session.user.id;
 
-  const deadline = parseDeadline(input.extracted.deadline);
+  const deadline = parseOptionalDate(input.extracted.deadline);
   if (!deadline.ok) {
     return {
       error: "Deadline isn't a valid date — go back to Review and use a format like 2026-12-15, or clear it",
