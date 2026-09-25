@@ -19,6 +19,7 @@ import {
 import { renderTailoredDocumentDocx } from "@/lib/docx-export";
 import { generatePrepNotes } from "@/lib/ai/generate-prep-notes";
 import { generatePerksSummary } from "@/lib/ai/generate-perks-summary";
+import { discardWizardDraft } from "@/lib/wizard/draft";
 import type { GenerationExtras } from "@/app/(app)/applications/wizard/step-duplicate-check";
 import type { TailoredKind } from "@prisma/client";
 
@@ -248,6 +249,15 @@ export async function createApplicationFromWizardAction(
   } catch (error) {
     console.error("[createApplicationFromWizardAction]", error);
     return { error: "Couldn't save this application — try again in a moment" };
+  }
+
+  // Best-effort -- the application is already saved at this point, so a
+  // failure to clear the draft must not surface as a save failure. A leftover
+  // draft is harmless: it just offers to resume a wizard that's already done.
+  try {
+    await discardWizardDraft(userId);
+  } catch (error) {
+    console.error("[createApplicationFromWizardAction] draft cleanup failed", error);
   }
 
   revalidatePath("/job-applications");
