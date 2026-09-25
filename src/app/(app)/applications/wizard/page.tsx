@@ -3,13 +3,17 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { resolveActiveKey } from "@/lib/ai/keys";
+import { loadWizardDraft } from "@/lib/wizard/draft";
 import { WizardShell } from "./wizard-shell";
 
 export default async function WizardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const resolved = await resolveActiveKey(session.user.id);
+  const [resolved, draft] = await Promise.all([
+    resolveActiveKey(session.user.id),
+    loadWizardDraft(session.user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl px-7 py-8">
@@ -35,7 +39,7 @@ export default async function WizardPage() {
           before using the guided flow.
         </p>
       ) : (
-        <WizardShell />
+        <WizardShell initialDraft={draft} />
       )}
     </div>
   );
