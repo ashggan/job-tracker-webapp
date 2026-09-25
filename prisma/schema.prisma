@@ -22,6 +22,7 @@ model User {
   aiUsageLogs   AIUsageLog[]
   resetTokens   PasswordResetToken[]
   resume        UserResume?
+  wizardDraft   WizardDraft?
 }
 
 // Supports the in-app "forgot password" flow (§4). Not one of the spec's
@@ -291,4 +292,35 @@ model UserResume {
 
   uploadedAt       DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+}
+
+// ---------- Wizard draft (§5.5, guided-add) ----------
+
+// One in-progress guided-add session per user -- starting a new wizard while
+// a draft exists just overwrites it (no product need for multiple concurrent
+// drafts). Saved at each step-transition "commit point" so a refresh doesn't
+// discard already-generated (and already-paid-for) AI content; deleted once
+// the wizard actually saves an Application, or the user starts over.
+model WizardDraft {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  step       String // one of the wizard's STEP_KEYS
+  postingUrl String?
+  extracted  Json? // ExtractedPosting | null
+  extras     Json? // GenerationExtras | null
+
+  // Mirrors WizardShell's GeneratedState (incl. the posting-signature
+  // "...For" fields from the stale-content-invalidation fix) so a resumed
+  // draft keeps treating fit/materials generated against an since-edited
+  // posting as stale, exactly like an in-memory session would.
+  fit            Json?
+  fitFor         String?
+  cv             Json?
+  cvFor          String?
+  coverLetter    Json?
+  coverLetterFor String?
+
+  updatedAt DateTime @updatedAt
 }

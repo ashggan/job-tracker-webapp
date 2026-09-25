@@ -19,7 +19,7 @@ const ROUGH_COST_PER_1M_TOKENS: Record<string, number> = {
 // requirements/keywords/deadline were actually extracted from.
 const MAX_SOURCE_TEXT_CHARS = 20_000;
 
-const extractedPostingSchema = z.object({
+export const extractedPostingSchema = z.object({
   jobTitle: z.string(),
   company: z.string(),
   requirements: z.array(z.string()),
@@ -34,6 +34,13 @@ const extractedPostingSchema = z.object({
 // post-hoc from the raw source text (see extractPostingDetails) rather than
 // AI-summarized, so nothing gets lost that the model's summary might drop.
 export type ExtractedPosting = z.infer<typeof extractedPostingSchema> & { description: string };
+
+// The full ExtractedPosting shape (including the post-hoc `description`
+// field) -- for validating round-tripped data, e.g. a saved wizard draft,
+// where the LLM-only schema above isn't sufficient on its own.
+export const extractedPostingWithDescriptionSchema = extractedPostingSchema.extend({
+  description: z.string(),
+});
 
 export type ExtractPostingResult =
   | { ok: true; data: ExtractedPosting }
