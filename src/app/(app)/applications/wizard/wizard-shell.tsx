@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "cn";
+import { Button } from "@/components/ui/button";
 import { StepPosting } from "./step-posting";
 import { StepReview } from "./step-review";
 import { StepDuplicateCheck, DEFAULT_EXTRAS, type GenerationExtras } from "./step-duplicate-check";
@@ -13,6 +14,8 @@ import type { FitScore } from "@/lib/ai/score-fit";
 import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
 import { buildPostingSignature } from "@/lib/wizard/posting-signature";
 import { STEPS, STEP_KEYS, type Step } from "@/lib/wizard/steps";
+import type { WizardDraftData } from "@/lib/wizard/draft";
+import { saveWizardDraftAction, discardWizardDraftAction } from "@/lib/actions/wizard-draft";
 
 // Fields a step generates via AI and can legitimately come back without
 // (skipped, or re-fetched on remount and not yet resolved/failed) — as
@@ -35,19 +38,61 @@ type GeneratedState = {
   coverLetterFor: string | null;
 };
 
-export function WizardShell() {
-  const [step, setStep] = useState<Step>("posting");
-  const [postingUrl, setPostingUrl] = useState<string | undefined>();
-  const [extracted, setExtracted] = useState<ExtractedPosting | null>(null);
-  const [extras, setExtras] = useState<GenerationExtras | null>(null);
+export function WizardShell({ initialDraft }: { initialDraft: WizardDraftData | null }) {
+  const [step, setStep] = useState<Step>(initialDraft?.step ?? "posting");
+  const [postingUrl, setPostingUrl] = useState<string | undefined>(initialDraft?.postingUrl);
+  const [extracted, setExtracted] = useState<ExtractedPosting | null>(initialDraft?.extracted ?? null);
+  const [extras, setExtras] = useState<GenerationExtras | null>(initialDraft?.extras ?? null);
   const [generated, setGenerated] = useState<GeneratedState>({
-    fit: null,
-    fitFor: null,
-    cv: null,
-    cvFor: null,
-    coverLetter: null,
-    coverLetterFor: null,
+    fit: initialDraft?.fit ?? null,
+    fitFor: initialDraft?.fitFor ?? null,
+    cv: initialDraft?.cv ?? null,
+    cvFor: initialDraft?.cvFor ?? null,
+    coverLetter: initialDraft?.coverLetter ?? null,
+    coverLetterFor: initialDraft?.coverLetterFor ?? null,
   });
+  // `initialDraft` itself never changes across this instance's lifetime (it
+  // comes from a server component that renders WizardShell exactly once),
+  // so the banner can reference it directly -- this flag is only for
+  // dismissing it once the user clicks "Start over".
+  const [showResumeBanner, setShowResumeBanner] = useState(initialDraft != null);
+
+  // Saved at each step-transition "commit point" (this effect only fires
+  // when one of these actually changes, never on a keystroke -- see the
+  // GeneratedState comment above) so a refresh doesn't discard
+  // already-generated, already-paid-for AI content. Skips exactly the one
+  // save that would otherwise immediately re-write the draft we just
+  // hydrated from, unchanged.
+  const skipNextSaveRef = useRef(initialDraft != null);
+  useEffect(() => {
+    if (!extracted) return;
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
+    void saveWizardDraftAction({
+      step,
+      postingUrl,
+      extracted,
+      extras,
+      fit: generated.fit,
+      fitFor: generated.fitFor,
+      cv: generated.cv,
+      cvFor: generated.cvFor,
+      coverLetter: generated.coverLetter,
+      coverLetterFor: generated.coverLetterFor,
+    });
+  }, [step, postingUrl, extracted, extras, generated]);
+
+  function handleStartOver() {
+    void discardWizardDraftAction();
+    setShowResumeBanner(false);
+    setStep("posting");
+    setPostingUrl(undefined);
+    setExtracted(null);
+    setExtras(null);
+    setGenerated({ fit: null, fitFor: null, cv: null, cvFor: null, coverLetter: null, coverLetterFor: null });
+  }
 
   function mergeGenerated(patch: Partial<GeneratedState>) {
     setGenerated((prev) => {
@@ -74,6 +119,21 @@ export function WizardShell() {
           </li>
         ))}
       </ol>
+
+      {showResumeBanner && initialDraft && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-[13px]">
+          <span>
+            Resuming your in-progress draft for{" "}
+            <span className="font-semibold">
+              {initialDraft.extracted.jobTitle} at {initialDraft.extracted.company}
+            </span>
+            .
+          </span>
+          <Button type="button" size="sm" variant="outline" onClick={handleStartOver}>
+            Start over
+          </Button>
+        </div>
+      )}
 
       {step === "posting" && (
         <StepPosting
