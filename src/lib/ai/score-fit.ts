@@ -71,11 +71,18 @@ export async function scoreFit(
       model,
       schema: fitScoreSchema,
       prompt:
-        "Score how well this candidate fits this job posting, on a 0-10 scale (0 = no fit, " +
-        "10 = ideal fit). Pick fitLabel from stretch/fair/good/strong based on the score. " +
-        "List fitStrengths and fitGaps as specific points, each tied to a concrete requirement " +
-        "or nice-to-have from the posting — not generic observations. fitRecommendation should " +
-        `be one short plain-language line, e.g. "7/10 — worth tailoring".\n\n` +
+        "Score how well this candidate fits this job posting on a 0-10 scale, using these " +
+        "fixed bands so scores are comparable across postings and providers — anchor to the " +
+        "band definition rather than a free-floating feeling:\n" +
+        "0-2 (stretch): missing most required qualifications; the role calls for a " +
+        "fundamentally different background.\n" +
+        "3-5 (fair): meets roughly half the requirements; a plausible but not strong candidate.\n" +
+        "6-8 (good): meets nearly all requirements with at most minor gaps.\n" +
+        "9-10 (strong): meets every requirement and several nice-to-haves; an excellent match.\n" +
+        "Set fitLabel to match the band the score falls in. List fitStrengths and fitGaps as " +
+        "specific points, each tied to a concrete requirement or nice-to-have from the posting " +
+        "— not generic observations. fitRecommendation should be one short plain-language line, " +
+        `e.g. "7/10 — worth tailoring".\n\n` +
         `${wrapUntrustedBlock("job_posting", jobContext)}\n\n${candidateContext}`,
       abortSignal: AbortSignal.timeout(30_000),
     });
