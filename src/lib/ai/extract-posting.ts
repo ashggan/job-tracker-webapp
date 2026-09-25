@@ -4,6 +4,7 @@ import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { prisma } from "@/lib/prisma";
 import { isFetchableUrl } from "@/lib/job-extraction";
+import { wrapUntrustedBlock } from "@/lib/ai/untrusted-content";
 
 // Rough $/1M-token blended estimate (input+output average) per provider — just
 // for the usage-accounting panel, not billing-accurate.
@@ -125,7 +126,7 @@ export async function extractPostingDetails(
         "strongly implies a cover letter is wanted. For keywords, list 5-15 concise (1-4 " +
         "word) ATS-style terms this posting emphasizes — specific skills, technologies, " +
         "certifications, or methodologies, not generic phrases.\n\n" +
-        sourceText.slice(0, MAX_SOURCE_TEXT_CHARS),
+        wrapUntrustedBlock("job_posting", sourceText.slice(0, MAX_SOURCE_TEXT_CHARS)),
       abortSignal: AbortSignal.timeout(30_000),
     });
 

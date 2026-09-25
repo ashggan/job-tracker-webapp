@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { loadCandidateContext } from "@/lib/ai/candidate-context";
+import { wrapUntrustedBlock } from "@/lib/ai/untrusted-content";
 import { prisma } from "@/lib/prisma";
 
 // Rough $/1M-token blended estimate (input+output average) per provider — just
@@ -74,7 +75,8 @@ export async function scoreFit(
         "10 = ideal fit). Pick fitLabel from stretch/fair/good/strong based on the score. " +
         "List fitStrengths and fitGaps as specific points, each tied to a concrete requirement " +
         "or nice-to-have from the posting — not generic observations. fitRecommendation should " +
-        `be one short plain-language line, e.g. "7/10 — worth tailoring".\n\n${jobContext}\n\n${candidateContext}`,
+        `be one short plain-language line, e.g. "7/10 — worth tailoring".\n\n` +
+        `${wrapUntrustedBlock("job_posting", jobContext)}\n\n${candidateContext}`,
       abortSignal: AbortSignal.timeout(30_000),
     });
 

@@ -2,6 +2,7 @@ import { generateText } from "ai";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { resolveActiveKey } from "@/lib/ai/keys";
 import { loadCandidateContext } from "@/lib/ai/candidate-context";
+import { wrapUntrustedBlock } from "@/lib/ai/untrusted-content";
 import { logUsage } from "@/lib/ai/tailor-cv";
 import type { ScoreFitInput, FitScore } from "@/lib/ai/score-fit";
 
@@ -32,10 +33,14 @@ export async function generatePrepNotes(
         "concrete talking points from the candidate's real experience worth highlighting. " +
         "Be specific to this posting and candidate — no generic interview advice. Use " +
         "Markdown headings and bullet lists.\n\n" +
-        `Job title: ${posting.jobTitle}\n` +
-        `Company: ${posting.company}\n` +
-        `Description: ${posting.descriptionText}\n` +
-        `Requirements:\n${posting.requirements.map((r) => `- ${r}`).join("\n")}\n\n` +
+        wrapUntrustedBlock(
+          "job_posting",
+          `Job title: ${posting.jobTitle}\n` +
+            `Company: ${posting.company}\n` +
+            `Description: ${posting.descriptionText}\n` +
+            `Requirements:\n${posting.requirements.map((r) => `- ${r}`).join("\n")}`
+        ) +
+        "\n\n" +
         (fit
           ? `Fit assessment — score ${fit.fitScore}/10, strengths: ${fit.fitStrengths.join("; ")}, ` +
             `gaps: ${fit.fitGaps.join("; ")}, recommendation: ${fit.fitRecommendation}\n\n`
