@@ -242,6 +242,7 @@ enum AIAction {
   extract_resume
   generate_prep_notes
   generate_perks_summary
+  import_applications
 }
 
 model AIUsageLog {

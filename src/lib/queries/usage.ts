@@ -10,6 +10,7 @@ export const AI_ACTION_ORDER: AIAction[] = [
   "generate_prep_notes",
   "generate_perks_summary",
   "extract_resume",
+  "import_applications",
 ];
 
 export const AI_ACTION_LABELS: Record<AIAction, string> = {
@@ -20,6 +21,7 @@ export const AI_ACTION_LABELS: Record<AIAction, string> = {
   generate_prep_notes: "Interview prep notes",
   generate_perks_summary: "Salary & perks summary",
   extract_resume: "Resume extraction",
+  import_applications: "Bulk import cleanup",
 };
 
 function providerLabel(provider: LlmProvider): string {
