@@ -11,6 +11,7 @@ import { StepSave } from "./step-save";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 import type { FitScore } from "@/lib/ai/score-fit";
 import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
+import { buildPostingSignature } from "@/lib/wizard/posting-signature";
 
 const STEPS = ["Posting", "Review", "Check", "Fit", "Materials", "Save"] as const;
 const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials", "save"] as const;
@@ -22,10 +23,19 @@ type Step = (typeof STEP_KEYS)[number];
 // complete. Steps update this only through mergeGenerated below, so a
 // null/absent field from a re-visited step can never erase a value a
 // previous visit already produced.
+//
+// The `...For` fields record the posting signature (see
+// buildPostingSignature) each result was generated against, so a user who
+// goes Back, edits the posting, then forward again gets fresh results
+// instead of stale ones computed against the old posting — see the
+// initialFit/initialCv/initialCoverLetter props below.
 type GeneratedState = {
   fit: FitScore | null;
+  fitFor: string | null;
   cv: TailoredCv | null;
+  cvFor: string | null;
   coverLetter: TailoredCoverLetter | null;
+  coverLetterFor: string | null;
 };
 
 export function WizardShell() {
@@ -35,8 +45,11 @@ export function WizardShell() {
   const [extras, setExtras] = useState<GenerationExtras | null>(null);
   const [generated, setGenerated] = useState<GeneratedState>({
     fit: null,
+    fitFor: null,
     cv: null,
+    cvFor: null,
     coverLetter: null,
+    coverLetterFor: null,
   });
 
   function mergeGenerated(patch: Partial<GeneratedState>) {
@@ -53,6 +66,7 @@ export function WizardShell() {
   }
 
   const stepIndex = STEP_KEYS.indexOf(step);
+  const postingSignature = extracted ? buildPostingSignature(extracted) : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,10 +117,13 @@ export function WizardShell() {
       {step === "fit" && extracted && (
         <StepFitScore
           extracted={extracted}
-          initialFit={generated.fit}
+          initialFit={generated.fitFor === postingSignature ? generated.fit : null}
           onBack={() => setStep("duplicate")}
           onContinue={(scored) => {
-            mergeGenerated({ fit: scored });
+            // Only stamp the signature when a result actually came back --
+            // otherwise (fit scoring skipped/failed) this would tag the
+            // still-stale generated.fit as fresh for the current posting.
+            mergeGenerated({ fit: scored, fitFor: scored ? postingSignature : null });
             setStep("materials");
           }}
         />
@@ -116,11 +133,18 @@ export function WizardShell() {
         <StepMaterials
           extracted={extracted}
           wantsCoverLetter={extras?.wantsCoverLetter ?? true}
-          initialCv={generated.cv}
-          initialCoverLetter={generated.coverLetter}
+          initialCv={generated.cvFor === postingSignature ? generated.cv : null}
+          initialCoverLetter={generated.coverLetterFor === postingSignature ? generated.coverLetter : null}
           onBack={() => setStep("fit")}
           onContinue={(materials) => {
-            mergeGenerated({ cv: materials.cv, coverLetter: materials.coverLetter });
+            // Same reasoning as fitFor above -- only stamp the signature
+            // for a field that actually generated successfully this visit.
+            mergeGenerated({
+              cv: materials.cv,
+              cvFor: materials.cv ? postingSignature : null,
+              coverLetter: materials.coverLetter,
+              coverLetterFor: materials.coverLetter ? postingSignature : null,
+            });
             setStep("save");
           }}
         />
