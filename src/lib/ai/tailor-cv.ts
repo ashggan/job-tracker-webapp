@@ -133,7 +133,15 @@ export async function tailorCv(userId: string, posting: ScoreFitInput): Promise<
         "never invent or change them. Reorder and select from the candidate's real skills to " +
         "foreground what's relevant — keep the same category names, never invent a skill they " +
         "don't have. Don't invent experience the candidate doesn't have. Return every job from " +
-        "the candidate's real experience, not just the most relevant ones.\n\n" +
+        "the candidate's real experience, not just the most relevant ones. Where a requirement " +
+        "or nice-to-have uses specific terminology (a tool, technology, methodology, or " +
+        "certification name) that truthfully matches something the candidate has actually done, " +
+        "mirror the posting's own phrasing rather than a loose synonym — this is what " +
+        "applicant-tracking systems match against; never introduce a term the candidate's real " +
+        "experience doesn't support just to match the posting. When rewriting a bullet that " +
+        "contains a quantified metric (a percentage, dollar amount, count, or duration), keep " +
+        "that number exactly as written — never drop it or alter it while foregrounding " +
+        "relevance.\n\n" +
         `${jobContext(posting)}\n\nCandidate's real resume data:\n${JSON.stringify({
           experience: sections.experience,
           skills: sections.skills,
