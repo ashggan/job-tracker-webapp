@@ -12,10 +12,7 @@ import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 import type { FitScore } from "@/lib/ai/score-fit";
 import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
 import { buildPostingSignature } from "@/lib/wizard/posting-signature";
-
-const STEPS = ["Posting", "Review", "Check", "Fit", "Materials", "Save"] as const;
-const STEP_KEYS = ["posting", "review", "duplicate", "fit", "materials", "save"] as const;
-type Step = (typeof STEP_KEYS)[number];
+import { STEPS, STEP_KEYS, type Step } from "@/lib/wizard/steps";
 
 // Fields a step generates via AI and can legitimately come back without
 // (skipped, or re-fetched on remount and not yet resolved/failed) — as

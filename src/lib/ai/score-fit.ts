@@ -14,7 +14,7 @@ const ROUGH_COST_PER_1M_TOKENS: Record<string, number> = {
   google: 1,
 };
 
-const fitScoreSchema = z.object({
+export const fitScoreSchema = z.object({
   fitScore: z.number().int().min(0).max(10),
   fitLabel: z.enum(["stretch", "fair", "good", "strong"]),
   fitStrengths: z.array(z.string()), // specific, each tied to a requirement/nice-to-have item
