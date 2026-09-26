@@ -107,7 +107,13 @@ export function TailorWithAiPanel({
           )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={handleRegenerate} disabled={isPending}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRegenerate}
+                disabled={isPending || !descriptionText}
+              >
                 {isPending && pendingAction === "regenerate" ? "Regenerating…" : "Regenerate"}
               </Button>
               <Button
@@ -124,6 +130,11 @@ export function TailorWithAiPanel({
               {isPending && pendingAction === "save" ? "Saving…" : saved ? "Saved" : "Save draft"}
             </Button>
           </div>
+          {!descriptionText && (
+            <p className="text-[13px] text-muted-foreground">
+              Add posting details for this application (above) to regenerate against the actual job description.
+            </p>
+          )}
 
           <div className="flex items-center gap-2 border-t border-border pt-4">
             <Input
@@ -137,10 +148,14 @@ export function TailorWithAiPanel({
             </Button>
           </div>
         </>
-      ) : (
+      ) : descriptionText ? (
         <Button type="button" onClick={handleRegenerate} disabled={isPending}>
           {isPending ? "Generating…" : "Generate cover letter"}
         </Button>
+      ) : (
+        <p className="text-[13px] text-muted-foreground">
+          Add posting details for this application (above) before generating a cover letter.
+        </p>
       )}
     </div>
   );
