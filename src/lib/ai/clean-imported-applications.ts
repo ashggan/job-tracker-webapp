@@ -92,17 +92,24 @@ export async function cleanImportedApplications(
     // Tolerant-but-logged, same posture as stripFabricatedContent: an
     // out-of-range/hallucinated sourceRowIndex is dropped rather than
     // trusted, and a row the model silently omitted is reported, but neither
-    // fails the whole import.
+    // fails the whole import. A repeated sourceRowIndex is dropped too (past
+    // the first occurrence) -- otherwise a hallucinated duplicate index would
+    // reach the review table as two rows for the same source data.
     const validIndex = (i: number) => i >= 0 && i < rows.length;
+    const seen = new Set<number>();
     const applications = object.applications.filter((row) => {
-      const kept = validIndex(row.sourceRowIndex);
-      if (!kept) {
+      if (!validIndex(row.sourceRowIndex)) {
         console.warn("[cleanImportedApplications] dropped row with out-of-range sourceRowIndex:", row.sourceRowIndex);
+        return false;
       }
-      return kept;
+      if (seen.has(row.sourceRowIndex)) {
+        console.warn("[cleanImportedApplications] dropped row with duplicate sourceRowIndex:", row.sourceRowIndex);
+        return false;
+      }
+      seen.add(row.sourceRowIndex);
+      return true;
     });
 
-    const seen = new Set(applications.map((row) => row.sourceRowIndex));
     const missing = rows.map((_, i) => i).filter((i) => !seen.has(i));
     if (missing.length > 0) {
       console.warn("[cleanImportedApplications] rows dropped by the model:", missing);
