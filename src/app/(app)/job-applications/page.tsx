@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { buttonVariants } from "@/components/ui/button";
 import { FitBadge } from "@/components/fit-badge";
 import { StageSelect } from "@/components/stage-select";
 import { DeleteApplicationButton } from "@/components/delete-application-button";
@@ -98,27 +99,32 @@ function TablePagination({
 
   const start = totalCount === 0 ? 0 : (page - 1) * TABLE_PAGE_SIZE + 1;
   const end = Math.min(page * TABLE_PAGE_SIZE, totalCount);
+  const arrowClass = cn(buttonVariants({ variant: "outline", size: "icon-sm" }));
 
   return (
-    <div className="flex items-center justify-between border-t border-border px-7 py-3 text-[13px] text-muted-foreground">
+    <div className="flex flex-col items-center gap-2 border-t border-border px-7 py-4 text-[13px] text-muted-foreground">
       <span>{totalCount === 0 ? "No applications" : `Showing ${start}–${end} of ${totalCount}`}</span>
       <div className="flex items-center gap-3">
         {page > 1 ? (
-          <Link href={hrefForPage(page - 1)} className="hover:text-foreground">
-            Previous
+          <Link href={hrefForPage(page - 1)} className={arrowClass} aria-label="Previous page">
+            <ChevronLeft />
           </Link>
         ) : (
-          <span className="opacity-50">Previous</span>
+          <span className={cn(arrowClass, "pointer-events-none opacity-40")} aria-disabled="true">
+            <ChevronLeft />
+          </span>
         )}
-        <span>
+        <span className="min-w-24 text-center font-medium text-foreground">
           Page {page} of {totalPages}
         </span>
         {page < totalPages ? (
-          <Link href={hrefForPage(page + 1)} className="hover:text-foreground">
-            Next
+          <Link href={hrefForPage(page + 1)} className={arrowClass} aria-label="Next page">
+            <ChevronRight />
           </Link>
         ) : (
-          <span className="opacity-50">Next</span>
+          <span className={cn(arrowClass, "pointer-events-none opacity-40")} aria-disabled="true">
+            <ChevronRight />
+          </span>
         )}
       </div>
     </div>
