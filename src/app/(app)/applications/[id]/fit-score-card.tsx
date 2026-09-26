@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Check, X } from "lucide-react";
 import type { FitLabel } from "@prisma/client";
 import { FitBadge } from "@/components/fit-badge";
@@ -8,6 +9,7 @@ import { FitScoreForm } from "./fit-score-form";
 
 export function FitScoreCard({
   applicationId,
+  hasDescription,
   fitScore,
   fitLabel,
   fitStrengths,
@@ -15,6 +17,7 @@ export function FitScoreCard({
   fitRecommendation,
 }: {
   applicationId: string;
+  hasDescription: boolean;
   fitScore: number | null;
   fitLabel: FitLabel | null;
   fitStrengths: string[];
@@ -27,13 +30,23 @@ export function FitScoreCard({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h3 className="font-heading text-xl">Fit score</h3>
-        <button
-          type="button"
-          onClick={() => setEditing((v) => !v)}
-          className="text-[13px] font-semibold text-accent-foreground hover:underline"
-        >
-          {editing ? "Cancel" : "Edit"}
-        </button>
+        <div className="flex items-center gap-3">
+          {hasDescription && (
+            <Link
+              href={`/applications/${applicationId}/elevate`}
+              className="text-[13px] font-semibold text-accent-foreground hover:underline"
+            >
+              Score & tailor with AI
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            className="text-[13px] font-semibold text-accent-foreground hover:underline"
+          >
+            {editing ? "Cancel" : "Edit"}
+          </button>
+        </div>
       </div>
 
       {editing ? (

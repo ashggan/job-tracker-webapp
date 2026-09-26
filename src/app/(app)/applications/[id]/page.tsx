@@ -47,6 +47,7 @@ export default async function ApplicationDetailPage({
             <CardContent>
               <FitScoreCard
                 applicationId={application.id}
+                hasDescription={Boolean(application.descriptionText)}
                 fitScore={application.fitScore}
                 fitLabel={application.fitLabel}
                 fitStrengths={(application.fitStrengths as string[] | null) ?? []}
