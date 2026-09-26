@@ -194,4 +194,23 @@ describe("findWithinBatchDuplicates", () => {
 
     expect(result).toEqual([null, 0, 0]);
   });
+
+  it("still tracks a row's URL for later matching even when that row itself matched via title", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: null, company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: "https://acme.com/jobs/55", company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: "https://acme.com/jobs/55", company: "DataCo", jobTitle: "Analyst" },
+    ]);
+
+    expect(result).toEqual([null, 0, 1]);
+  });
+
+  it("does not let a literal '|' in a field collide two distinct company+title pairs", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: null, company: "Acme|Support", jobTitle: "Tier2" },
+      { postingUrl: null, company: "Acme", jobTitle: "Support|Tier2" },
+    ]);
+
+    expect(result).toEqual([null, null]);
+  });
 });

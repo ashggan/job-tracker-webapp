@@ -117,16 +117,20 @@ export function findWithinBatchDuplicates(candidates: DuplicateCandidate[]): (nu
 
   return candidates.map((candidate, i) => {
     const normalizedUrl = candidate.postingUrl ? normalizeUrl(candidate.postingUrl) : null;
-    const titleKey = `${candidate.company.trim().toLowerCase()}|${candidate.jobTitle.trim().toLowerCase()}`;
+    // A JSON-encoded tuple, not a `|`-joined string -- a raw join would let a
+    // literal "|" inside a company or title collide two distinct pairs into
+    // the same key.
+    const titleKey = JSON.stringify([candidate.company.trim().toLowerCase(), candidate.jobTitle.trim().toLowerCase()]);
 
     const priorByUrl = normalizedUrl ? firstSeenByUrl.get(normalizedUrl) : undefined;
     const priorByTitle = firstSeenByTitle.get(titleKey);
     const priorIndex = priorByUrl ?? priorByTitle ?? null;
 
-    if (priorIndex == null) {
-      if (normalizedUrl) firstSeenByUrl.set(normalizedUrl, i);
-      firstSeenByTitle.set(titleKey, i);
-    }
+    // Registered unconditionally (not just for a non-duplicate row) -- a row
+    // that itself matched via title still needs its own URL/title recorded,
+    // otherwise a *later* row sharing that URL would never find it.
+    if (normalizedUrl && !firstSeenByUrl.has(normalizedUrl)) firstSeenByUrl.set(normalizedUrl, i);
+    if (!firstSeenByTitle.has(titleKey)) firstSeenByTitle.set(titleKey, i);
 
     return priorIndex;
   });
