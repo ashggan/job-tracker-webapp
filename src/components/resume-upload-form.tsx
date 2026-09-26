@@ -3,8 +3,7 @@
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FileDropzone } from "@/components/file-dropzone";
 
 type UploadResult =
   | { kind: "success"; wordCount: number; warning: string | null }
@@ -45,19 +44,13 @@ export function ResumeUploadForm({ hasExistingResume }: { hasExistingResume: boo
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="resume-file">
-          {hasExistingResume ? "Replace resume" : "Upload resume"}
-        </Label>
-        <Input
-          id="resume-file"
-          name="file"
-          type="file"
-          accept=".pdf,.docx"
-          required
-          disabled={isPending}
-        />
-      </div>
+      <FileDropzone
+        name="file"
+        accept=".pdf,.docx"
+        label={hasExistingResume ? "Replace resume" : "Upload resume"}
+        required
+        disabled={isPending}
+      />
       <Button type="submit" disabled={isPending} className="self-start">
         {isPending ? "Uploading…" : hasExistingResume ? "Replace" : "Upload"}
       </Button>
