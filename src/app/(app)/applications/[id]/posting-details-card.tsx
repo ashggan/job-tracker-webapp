@@ -15,23 +15,36 @@ export function PostingDetailsCard({
   postingUrl: string | null;
 }) {
   const router = useRouter();
-  const [pasting, setPasting] = useState(!postingUrl);
+  // Whether the user has explicitly chosen to paste instead of fetching --
+  // separate from "should the fetch option show", which is derived fresh
+  // from the postingUrl prop below so it reacts if a link is added later.
+  const [forcedPaste, setForcedPaste] = useState(false);
+  const showFetch = Boolean(postingUrl) && !forcedPaste;
   const [pastedText, setPastedText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function run(input: { url?: string; pastedText?: string }) {
     setError(null);
+    setWarning(null);
     startTransition(async () => {
       const extracted = await extractPostingAction(input);
       if (!extracted.ok) {
         setError(extracted.error);
-        if (input.url) setPasting(true); // fall back to paste on a failed fetch
+        if (input.url) setForcedPaste(true); // fall back to paste on a failed fetch
         return;
       }
       const applied = await applyPostingDetailsAction(applicationId, extracted.data);
       if (!applied.ok) {
         setError(applied.error);
+        return;
+      }
+      // A warning means part of the result didn't apply -- show it instead
+      // of refreshing immediately, since refreshing removes this card the
+      // moment descriptionText is set and the warning would never be seen.
+      if (applied.warning) {
+        setWarning(applied.warning);
         return;
       }
       router.refresh();
@@ -54,15 +67,22 @@ export function PostingDetailsCard({
         </p>
       </div>
 
-      {!pasting && postingUrl ? (
+      {warning ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-[13px] text-muted-foreground">{warning}</p>
+          <Button type="button" size="sm" onClick={() => router.refresh()}>
+            Continue
+          </Button>
+        </div>
+      ) : showFetch ? (
         <div className="flex items-center gap-3">
-          <Button type="button" size="sm" onClick={() => run({ url: postingUrl })} disabled={isPending}>
+          <Button type="button" size="sm" onClick={() => run({ url: postingUrl! })} disabled={isPending}>
             {isPending ? "Fetching…" : "Fetch from posting link"}
           </Button>
           <button
             type="button"
             className="text-[13px] text-muted-foreground hover:underline"
-            onClick={() => setPasting(true)}
+            onClick={() => setForcedPaste(true)}
           >
             Paste it instead
           </button>

@@ -6,7 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { parseOptionalDate } from "@/lib/dates";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 
-export type ApplyPostingDetailsResult = { ok: true } | { ok: false; error: string };
+export type ApplyPostingDetailsResult =
+  | { ok: true; warning?: string }
+  | { ok: false; error: string };
 
 // Backfills descriptionText/requirements/niceToHaves/keywords onto an
 // application that didn't get them at creation (manual add, bulk import) --
@@ -39,5 +41,12 @@ export async function applyPostingDetailsAction(
   });
 
   revalidatePath(`/applications/${applicationId}`);
+
+  // The rest of the backfill (descriptionText/requirements/etc.) is the part
+  // that actually unlocks fit scoring/tailoring -- a bad deadline string
+  // shouldn't block all of that, but it also shouldn't be dropped silently.
+  if (!deadline.ok) {
+    return { ok: true, warning: "Everything else was added, but the deadline on that posting couldn't be parsed." };
+  }
   return { ok: true };
 }
