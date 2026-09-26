@@ -2,8 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FileDropzone } from "@/components/file-dropzone";
 import { uploadAndCleanApplicationsAction, type ImportReviewRow } from "@/lib/actions/import-applications";
 
 export function StepUpload({
@@ -36,16 +35,14 @@ export function StepUpload({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="import-file" className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-          Spreadsheet
-        </Label>
-        <Input id="import-file" name="file" type="file" accept=".csv,.xlsx" required disabled={isPending} />
-        <p className="text-[13px] text-muted-foreground">
-          A .csv or .xlsx export from wherever you&apos;ve been tracking applications. We&apos;ll clean it up
-          and let you review before saving anything.
-        </p>
-      </div>
+      <FileDropzone
+        name="file"
+        accept=".csv,.xlsx"
+        label="Spreadsheet"
+        hint="A .csv or .xlsx export from wherever you've been tracking applications. We'll clean it up and let you review before saving anything."
+        required
+        disabled={isPending}
+      />
 
       {error && (
         <p className="text-[13px] text-destructive" role="alert">
