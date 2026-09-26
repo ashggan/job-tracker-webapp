@@ -105,3 +105,33 @@ export async function findDuplicateApplications(
   const [matches] = await findDuplicateApplicationsForBatch(userId, [candidate]);
   return matches;
 }
+
+// findDuplicateApplicationsForBatch only checks each candidate against
+// applications already in the DB -- two identical rows within the same
+// import batch never get compared to each other. This flags a candidate as
+// a repeat of an earlier row in the same batch (by index), using the same
+// URL-first-then-company+title priority as matchCandidate.
+export function findWithinBatchDuplicates(candidates: DuplicateCandidate[]): (number | null)[] {
+  const firstSeenByUrl = new Map<string, number>();
+  const firstSeenByTitle = new Map<string, number>();
+
+  return candidates.map((candidate, i) => {
+    const normalizedUrl = candidate.postingUrl ? normalizeUrl(candidate.postingUrl) : null;
+    // A JSON-encoded tuple, not a `|`-joined string -- a raw join would let a
+    // literal "|" inside a company or title collide two distinct pairs into
+    // the same key.
+    const titleKey = JSON.stringify([candidate.company.trim().toLowerCase(), candidate.jobTitle.trim().toLowerCase()]);
+
+    const priorByUrl = normalizedUrl ? firstSeenByUrl.get(normalizedUrl) : undefined;
+    const priorByTitle = firstSeenByTitle.get(titleKey);
+    const priorIndex = priorByUrl ?? priorByTitle ?? null;
+
+    // Registered unconditionally (not just for a non-duplicate row) -- a row
+    // that itself matched via title still needs its own URL/title recorded,
+    // otherwise a *later* row sharing that URL would never find it.
+    if (normalizedUrl && !firstSeenByUrl.has(normalizedUrl)) firstSeenByUrl.set(normalizedUrl, i);
+    if (!firstSeenByTitle.has(titleKey)) firstSeenByTitle.set(titleKey, i);
+
+    return priorIndex;
+  });
+}

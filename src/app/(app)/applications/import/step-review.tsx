@@ -110,6 +110,11 @@ export function StepReview({ rows, onBack }: { rows: ImportReviewRow[]; onBack: 
                       Possible duplicate — View
                     </Link>
                   )}
+                  {row.duplicateOfRow != null && (
+                    <span className="text-[12px] text-muted-foreground">
+                      Duplicate of row {row.duplicateOfRow + 1} above
+                    </span>
+                  )}
                 </div>
               </TableCell>
               <TableCell>{row.company}</TableCell>

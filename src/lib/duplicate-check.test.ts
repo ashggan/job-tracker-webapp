@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { findDuplicateApplications, findDuplicateApplicationsForBatch } from "./duplicate-check";
+import {
+  findDuplicateApplications,
+  findDuplicateApplicationsForBatch,
+  findWithinBatchDuplicates,
+} from "./duplicate-check";
 import { prisma } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
@@ -150,5 +154,63 @@ describe("findDuplicateApplicationsForBatch", () => {
     expect(results[0].map((m) => m.id)).toEqual(["1"]); // URL match
     expect(results[1]).toEqual([]); // genuinely new
     expect(results[2].map((m) => m.id)).toEqual(["1"]); // case-insensitive company+title match
+  });
+});
+
+describe("findWithinBatchDuplicates", () => {
+  it("flags a later row as a duplicate of an earlier one by normalized URL", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: "https://boards.acme.com/jobs/123", company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: "https://www.boards.acme.com/jobs/123?utm_source=x", company: "Acme Inc", jobTitle: "SWE" },
+    ]);
+
+    expect(result).toEqual([null, 0]);
+  });
+
+  it("flags a later row as a duplicate of an earlier one by case-insensitive company+title", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: null, company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: null, company: "acme", jobTitle: "  Engineer  " },
+    ]);
+
+    expect(result).toEqual([null, 0]);
+  });
+
+  it("does not flag genuinely distinct rows", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: null, company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: null, company: "New Co", jobTitle: "Designer" },
+    ]);
+
+    expect(result).toEqual([null, null]);
+  });
+
+  it("points every repeat back at the first occurrence, not the previous one", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: null, company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: null, company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: null, company: "Acme", jobTitle: "Engineer" },
+    ]);
+
+    expect(result).toEqual([null, 0, 0]);
+  });
+
+  it("still tracks a row's URL for later matching even when that row itself matched via title", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: null, company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: "https://acme.com/jobs/55", company: "Acme", jobTitle: "Engineer" },
+      { postingUrl: "https://acme.com/jobs/55", company: "DataCo", jobTitle: "Analyst" },
+    ]);
+
+    expect(result).toEqual([null, 0, 1]);
+  });
+
+  it("does not let a literal '|' in a field collide two distinct company+title pairs", () => {
+    const result = findWithinBatchDuplicates([
+      { postingUrl: null, company: "Acme|Support", jobTitle: "Tier2" },
+      { postingUrl: null, company: "Acme", jobTitle: "Support|Tier2" },
+    ]);
+
+    expect(result).toEqual([null, null]);
   });
 });

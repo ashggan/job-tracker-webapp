@@ -6,12 +6,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { detectSpreadsheetType, parseSpreadsheetFile, MAX_FILE_SIZE_BYTES } from "@/lib/import/parse-spreadsheet";
 import { cleanImportedApplications, type ImportedApplicationRow } from "@/lib/ai/clean-imported-applications";
-import { findDuplicateApplicationsForBatch, type DuplicateMatch } from "@/lib/duplicate-check";
+import { findDuplicateApplicationsForBatch, findWithinBatchDuplicates, type DuplicateMatch } from "@/lib/duplicate-check";
 import { parseOptionalDate } from "@/lib/dates";
 import { STAGE_ORDER } from "@/lib/stages";
 
 export type ImportReviewRow = ImportedApplicationRow & {
   duplicates: DuplicateMatch[];
+  // Index of an earlier row in this same import that looks like the same
+  // application -- unlike `duplicates`, there's no saved id to link to yet.
+  duplicateOfRow: number | null;
   // Seeded false when a likely duplicate was found, true otherwise -- the
   // review step's per-row checkbox starts from this.
   included: boolean;
@@ -50,15 +53,19 @@ export async function uploadAndCleanApplicationsAction(formData: FormData): Prom
   const cleaned = await cleanImportedApplications(userId, parsed.headers, parsed.rows);
   if (!cleaned.ok) return { ok: false, error: cleaned.error };
 
-  const duplicateMatches = await findDuplicateApplicationsForBatch(
-    userId,
-    cleaned.data.map((row) => ({ postingUrl: row.postingUrl, company: row.company, jobTitle: row.jobTitle }))
-  );
+  const candidates = cleaned.data.map((row) => ({
+    postingUrl: row.postingUrl,
+    company: row.company,
+    jobTitle: row.jobTitle,
+  }));
+  const duplicateMatches = await findDuplicateApplicationsForBatch(userId, candidates);
+  const withinBatchDuplicates = findWithinBatchDuplicates(candidates);
 
   const rows: ImportReviewRow[] = cleaned.data.map((row, i) => ({
     ...row,
     duplicates: duplicateMatches[i] ?? [],
-    included: (duplicateMatches[i]?.length ?? 0) === 0,
+    duplicateOfRow: withinBatchDuplicates[i],
+    included: (duplicateMatches[i]?.length ?? 0) === 0 && withinBatchDuplicates[i] == null,
   }));
 
   return { ok: true, rows, truncated: parsed.truncated };
