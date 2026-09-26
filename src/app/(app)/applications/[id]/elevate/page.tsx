@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getApplicationForUser } from "@/lib/queries/applications";
+import { getApplicationPostingFieldsForUser } from "@/lib/queries/applications";
 import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 import { ElevateShell } from "./elevate-shell";
 
@@ -11,7 +11,7 @@ export default async function ElevateApplicationPage({
 }) {
   const { id } = await params;
   const session = await auth();
-  const application = await getApplicationForUser(session!.user.id, id);
+  const application = await getApplicationPostingFieldsForUser(session!.user.id, id);
   if (!application) notFound();
 
   // Nothing to score/tailor against yet -- add posting details on the detail
