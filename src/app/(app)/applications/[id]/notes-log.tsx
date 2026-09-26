@@ -72,7 +72,11 @@ export function NotesLog({
         {notes.length === 0 && !adding && <li className="text-[13px] text-muted-foreground">No notes yet.</li>}
         {notes.map((note) => (
           <li key={note.id} className="text-[13px]">
-            <p className="text-[11px] text-muted-foreground">
+            {/* suppressHydrationWarning: toLocaleTimeString renders in the
+                server's timezone during SSR and the browser's during
+                hydration -- they can legitimately disagree, so this accepts
+                the (correct) client-rendered value instead of erroring. */}
+            <p className="text-[11px] text-muted-foreground" suppressHydrationWarning>
               {note.createdAt.toLocaleDateString()} ·{" "}
               {note.createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
             </p>
