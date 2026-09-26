@@ -11,6 +11,7 @@ export const AI_ACTION_ORDER: AIAction[] = [
   "generate_perks_summary",
   "extract_resume",
   "import_applications",
+  "generate_application_email",
 ];
 
 export const AI_ACTION_LABELS: Record<AIAction, string> = {
@@ -22,6 +23,7 @@ export const AI_ACTION_LABELS: Record<AIAction, string> = {
   generate_perks_summary: "Salary & perks summary",
   extract_resume: "Resume extraction",
   import_applications: "Bulk import cleanup",
+  generate_application_email: "Application email",
 };
 
 function providerLabel(provider: LlmProvider): string {

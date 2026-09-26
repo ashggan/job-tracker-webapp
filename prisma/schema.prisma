@@ -206,6 +206,7 @@ enum TailoredKind {
   cover_letter
   prep_notes
   perks
+  application_email
 }
 
 model TailoredDocument {
@@ -243,6 +244,7 @@ enum AIAction {
   generate_prep_notes
   generate_perks_summary
   import_applications
+  generate_application_email
 }
 
 model AIUsageLog {

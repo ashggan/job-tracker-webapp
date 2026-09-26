@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { tailorCoverLetter } from "@/lib/ai/tailor-cv";
 import { reviseCoverLetter } from "@/lib/ai/revise-cover-letter";
+import { generateApplicationEmail, type ApplicationEmail } from "@/lib/ai/generate-application-email";
 import { getNextVersion } from "@/lib/queries/tailored-documents";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
 
@@ -51,6 +52,33 @@ export async function retailorCoverLetterAction(applicationId: string): Promise<
 
   revalidatePath(`/applications/${applicationId}`);
   return { ok: true, body: result.data.body, docId: doc.id };
+}
+
+export type GenerateApplicationEmailActionResult =
+  | { ok: true; data: ApplicationEmail; docId: string }
+  | { ok: false; error: string };
+
+// Used for both the first "Generate" and any later "Regenerate" -- each call
+// creates a new version, same as retailorCoverLetterAction.
+export async function generateApplicationEmailAction(
+  applicationId: string
+): Promise<GenerateApplicationEmailActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const application = await getOwnedApplication(applicationId, session.user.id);
+  if (!application) return { ok: false, error: "Application not found" };
+
+  const result = await generateApplicationEmail(session.user.id, toScoreFitInput(application));
+  if (!result.ok) return result;
+
+  const version = await getNextVersion(applicationId, "application_email");
+  const doc = await prisma.tailoredDocument.create({
+    data: { applicationId, kind: "application_email", version, contentJson: result.data },
+  });
+
+  revalidatePath(`/applications/${applicationId}`);
+  return { ok: true, data: result.data, docId: doc.id };
 }
 
 export async function reviseCoverLetterAction(
