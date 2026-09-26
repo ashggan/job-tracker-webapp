@@ -15,6 +15,8 @@ import { auth } from "@/lib/auth";
 import {
   getBoardColumns,
   getTableRows,
+  getTableRowCount,
+  TABLE_PAGE_SIZE,
   type TableFilters as Filters,
 } from "@/lib/queries/applications";
 import { isDueSoon } from "@/lib/stages";
@@ -75,6 +77,54 @@ function SortHeader({
   );
 }
 
+function TablePagination({
+  page,
+  totalPages,
+  totalCount,
+  searchParams,
+}: {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  searchParams: Record<string, string | undefined>;
+}) {
+  function hrefForPage(target: number) {
+    const params = new URLSearchParams(
+      Object.entries(searchParams).filter(([, v]) => v) as [string, string][]
+    );
+    params.set("page", String(target));
+    return `/job-applications?${params.toString()}`;
+  }
+
+  const start = totalCount === 0 ? 0 : (page - 1) * TABLE_PAGE_SIZE + 1;
+  const end = Math.min(page * TABLE_PAGE_SIZE, totalCount);
+
+  return (
+    <div className="flex items-center justify-between border-t border-border px-7 py-3 text-[13px] text-muted-foreground">
+      <span>{totalCount === 0 ? "No applications" : `Showing ${start}–${end} of ${totalCount}`}</span>
+      <div className="flex items-center gap-3">
+        {page > 1 ? (
+          <Link href={hrefForPage(page - 1)} className="hover:text-foreground">
+            Previous
+          </Link>
+        ) : (
+          <span className="opacity-50">Previous</span>
+        )}
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        {page < totalPages ? (
+          <Link href={hrefForPage(page + 1)} className="hover:text-foreground">
+            Next
+          </Link>
+        ) : (
+          <span className="opacity-50">Next</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default async function TablePage({
   searchParams,
 }: {
@@ -97,13 +147,19 @@ export default async function TablePage({
   // ApplicationsView -- both fetches happen up front so the toggle never
   // needs a server round-trip. ?view=board only picks the initial view
   // (e.g. for a bookmarked link).
-  const [columns, rows] = await Promise.all([
+  const [columns, totalCount] = await Promise.all([
     getBoardColumns(userId),
-    getTableRows(userId, filters),
+    getTableRowCount(userId, filters),
   ]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / TABLE_PAGE_SIZE));
+  // Clamped against totalPages so a stale ?page= left over from a narrower
+  // filter (or just typed by hand) can never request a page past the end.
+  const page = Math.min(Math.max(1, Number(params.page) || 1), totalPages);
+  const rows = await getTableRows(userId, filters, { page });
 
   const tableContent = (
-      <div className="overflow-x-auto px-7 pb-7 pt-1.5">
+    <>
+      <div className="overflow-x-auto px-7 pt-1.5">
         <Table>
           <TableHeader>
             <TableRow>
@@ -202,6 +258,8 @@ export default async function TablePage({
           </TableBody>
         </Table>
       </div>
+      <TablePagination page={page} totalPages={totalPages} totalCount={totalCount} searchParams={params} />
+    </>
   );
 
   return (

@@ -23,7 +23,13 @@ export type TableFilters = {
   dir?: "asc" | "desc";
 };
 
-export async function getTableRows(userId: string, filters: TableFilters) {
+// 10 per page for the table view (§ job-applications). The xlsx export route
+// also builds on this same where-clause via buildTableWhere, but always
+// wants every matching row -- pagination is opt-in (only getTableRows'
+// `pagination` param), never baked into the shared filter logic itself.
+export const TABLE_PAGE_SIZE = 10;
+
+function buildTableWhere(userId: string, filters: TableFilters): Prisma.ApplicationWhereInput {
   const where: Prisma.ApplicationWhereInput = { userId };
 
   if (filters.stage) where.stage = filters.stage;
@@ -38,6 +44,20 @@ export async function getTableRows(userId: string, filters: TableFilters) {
       { notes: { some: { body: { contains: filters.q, mode: "insensitive" } } } },
     ];
   }
+
+  return where;
+}
+
+export async function getTableRowCount(userId: string, filters: TableFilters): Promise<number> {
+  return prisma.application.count({ where: buildTableWhere(userId, filters) });
+}
+
+export async function getTableRows(
+  userId: string,
+  filters: TableFilters,
+  pagination?: { page: number }
+) {
+  const where = buildTableWhere(userId, filters);
 
   const sortField = filters.sort ?? "dateApplied";
   const dir = filters.dir ?? "desc";
@@ -57,6 +77,9 @@ export async function getTableRows(userId: string, filters: TableFilters) {
   return prisma.application.findMany({
     where,
     orderBy,
+    ...(pagination
+      ? { skip: (pagination.page - 1) * TABLE_PAGE_SIZE, take: TABLE_PAGE_SIZE }
+      : {}),
     include: {
       notes: { orderBy: { createdAt: "desc" }, take: 1 },
       tailoredDocuments: { orderBy: { version: "desc" }, select: { id: true, kind: true } },
