@@ -105,3 +105,29 @@ export async function findDuplicateApplications(
   const [matches] = await findDuplicateApplicationsForBatch(userId, [candidate]);
   return matches;
 }
+
+// findDuplicateApplicationsForBatch only checks each candidate against
+// applications already in the DB -- two identical rows within the same
+// import batch never get compared to each other. This flags a candidate as
+// a repeat of an earlier row in the same batch (by index), using the same
+// URL-first-then-company+title priority as matchCandidate.
+export function findWithinBatchDuplicates(candidates: DuplicateCandidate[]): (number | null)[] {
+  const firstSeenByUrl = new Map<string, number>();
+  const firstSeenByTitle = new Map<string, number>();
+
+  return candidates.map((candidate, i) => {
+    const normalizedUrl = candidate.postingUrl ? normalizeUrl(candidate.postingUrl) : null;
+    const titleKey = `${candidate.company.trim().toLowerCase()}|${candidate.jobTitle.trim().toLowerCase()}`;
+
+    const priorByUrl = normalizedUrl ? firstSeenByUrl.get(normalizedUrl) : undefined;
+    const priorByTitle = firstSeenByTitle.get(titleKey);
+    const priorIndex = priorByUrl ?? priorByTitle ?? null;
+
+    if (priorIndex == null) {
+      if (normalizedUrl) firstSeenByUrl.set(normalizedUrl, i);
+      firstSeenByTitle.set(titleKey, i);
+    }
+
+    return priorIndex;
+  });
+}
