@@ -59,6 +59,9 @@ export function TableFilters({
     } else {
       params.set(key, value);
     }
+    // A narrower filter almost always means fewer pages -- jump back to the
+    // first one rather than risk landing past the end of the new result set.
+    params.delete("page");
     router.push(`${pathname}?${params.toString()}`);
   }
 
