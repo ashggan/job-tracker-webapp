@@ -41,6 +41,11 @@ export async function retailorCoverLetterAction(applicationId: string): Promise<
 
   const application = await getOwnedApplication(applicationId, session.user.id);
   if (!application) return { ok: false, error: "Application not found" };
+  // Without a description, tailoring would run against an empty job context
+  // and produce a generic letter with no indication anything was wrong.
+  if (!application.descriptionText) {
+    return { ok: false, error: "Add posting details for this application before generating a cover letter" };
+  }
 
   const result = await tailorCoverLetter(session.user.id, toScoreFitInput(application));
   if (!result.ok) return result;
