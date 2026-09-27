@@ -22,7 +22,10 @@ export function encrypt(plaintext: string): string {
 export function decrypt(payload: string): string {
   const parts = payload.split(":");
   const [ivHex, authTagHex, ciphertextHex] = parts;
-  if (parts.length !== 3 || ivHex === undefined || authTagHex === undefined || ciphertextHex === undefined) {
+  // Both checks are needed: the length check alone lets an empty segment
+  // through (e.g. "::deadbeef" splits into exactly 3 parts, one of them
+  // empty), and a falsy check alone would silently ignore extra segments.
+  if (parts.length !== 3 || !ivHex || !authTagHex || !ciphertextHex) {
     throw new Error("Malformed encrypted payload");
   }
   const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivHex, "hex"));
