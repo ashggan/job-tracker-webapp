@@ -101,3 +101,23 @@ export async function getApplicationForUser(userId: string, id: string) {
   });
   return application;
 }
+
+// A handful of scalar fields -- for a caller (the elevate flow) that only
+// needs to build a posting object, not the full detail-page record with its
+// tailored-document contentJson blobs and full note/stage history.
+export async function getApplicationPostingFieldsForUser(userId: string, id: string) {
+  return prisma.application.findFirst({
+    where: { id, userId },
+    select: {
+      id: true,
+      jobTitle: true,
+      company: true,
+      descriptionText: true,
+      requirements: true,
+      niceToHaves: true,
+      keywords: true,
+      location: true,
+      deadline: true,
+    },
+  });
+}

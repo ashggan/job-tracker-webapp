@@ -10,7 +10,7 @@ import { generateApplicationEmail, type ApplicationEmail } from "@/lib/ai/genera
 import { getNextVersion } from "@/lib/queries/tailored-documents";
 import type { ScoreFitInput } from "@/lib/ai/score-fit";
 
-async function getOwnedApplication(applicationId: string, userId: string) {
+export async function getOwnedApplication(applicationId: string, userId: string) {
   return prisma.application.findFirst({ where: { id: applicationId, userId } });
 }
 
