@@ -11,6 +11,7 @@ import { RecordCard } from "./record-card";
 import { InterviewPrepNotes } from "./interview-prep-notes";
 import { DocumentsCard } from "./documents-card";
 import { TailorWithAiPanel } from "./tailor-with-ai-panel";
+import { PostingDetailsCard } from "./posting-details-card";
 import { coverLetterSchema } from "@/lib/ai/tailor-cv";
 
 export default async function ApplicationDetailPage({
@@ -43,6 +44,10 @@ export default async function ApplicationDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
         <div className="flex flex-col gap-6">
+          {!application.descriptionText && (
+            <PostingDetailsCard applicationId={application.id} postingUrl={application.postingUrl} />
+          )}
+
           <Card>
             <CardContent>
               <FitScoreCard
