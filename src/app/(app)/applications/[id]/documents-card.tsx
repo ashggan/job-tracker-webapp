@@ -89,9 +89,11 @@ function DocumentBody({ kind, contentJson }: { kind: TailoredKind; contentJson: 
 export function DocumentsCard({
   applicationId,
   docs: initialDocs,
+  hasDescription,
 }: {
   applicationId: string;
   docs: Doc[];
+  hasDescription: boolean;
 }) {
   const [docs, setDocs] = useState(initialDocs);
   const [viewing, setViewing] = useState<Doc | null>(null);
@@ -159,7 +161,8 @@ export function DocumentsCard({
                     <button
                       type="button"
                       onClick={handleGenerateApplicationEmail}
-                      disabled={isPending}
+                      disabled={isPending || !hasDescription}
+                      title={!hasDescription ? "Add posting details for this application first" : undefined}
                       className="flex size-7 shrink-0 items-center justify-center rounded-full bg-card text-accent-foreground hover:bg-muted disabled:opacity-50"
                     >
                       <Sparkles className="size-3.5" />
@@ -200,7 +203,8 @@ export function DocumentsCard({
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateApplicationEmail}
-                  disabled={isPending}
+                  disabled={isPending || !hasDescription}
+                  title={!hasDescription ? "Add posting details for this application first" : undefined}
                 >
                   {isPending ? "Regenerating…" : "Regenerate"}
                 </Button>

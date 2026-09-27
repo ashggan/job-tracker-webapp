@@ -73,6 +73,11 @@ export async function generateApplicationEmailAction(
 
   const application = await getOwnedApplication(applicationId, session.user.id);
   if (!application) return { ok: false, error: "Application not found" };
+  // Same reasoning as retailorCoverLetterAction -- an empty description
+  // would silently produce a generic, unlabeled email.
+  if (!application.descriptionText) {
+    return { ok: false, error: "Add posting details for this application before generating an email" };
+  }
 
   const result = await generateApplicationEmail(session.user.id, toScoreFitInput(application));
   if (!result.ok) return result;
