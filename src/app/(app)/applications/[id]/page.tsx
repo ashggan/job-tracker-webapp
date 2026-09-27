@@ -64,7 +64,11 @@ export default async function ApplicationDetailPage({
 
           <Card>
             <CardContent>
-              <DocumentsCard applicationId={application.id} docs={application.tailoredDocuments} />
+              <DocumentsCard
+                applicationId={application.id}
+                docs={application.tailoredDocuments}
+                hasDescription={Boolean(application.descriptionText)}
+              />
             </CardContent>
           </Card>
 
