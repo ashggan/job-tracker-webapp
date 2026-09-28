@@ -1,3 +1,4 @@
+import "./dommatrix-polyfill";
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import type { ResumeFileType } from "@prisma/client";
