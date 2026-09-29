@@ -59,14 +59,24 @@ export function ElevateShell({
       </ol>
 
       {step === "fit" && (
-        <StepFitScore
-          extracted={extracted}
-          onBack={() => router.push(`/applications/${applicationId}`)}
-          onContinue={(scored) => {
-            setFit(scored);
-            setStep("materials");
-          }}
-        />
+        <div className="flex flex-col gap-3">
+          <StepFitScore
+            extracted={extracted}
+            onBack={() => router.push(`/applications/${applicationId}`)}
+            onContinue={(scored) => {
+              setFit(scored);
+              setStep("materials");
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => handleSave({ cv: null, coverLetter: null })}
+            disabled={isPending}
+            className="self-start text-[13px] text-muted-foreground hover:underline disabled:opacity-50"
+          >
+            Skip & save — don&apos;t tailor a CV or cover letter
+          </button>
+        </div>
       )}
 
       {step === "materials" && (
