@@ -24,28 +24,7 @@ import { isDueSoon } from "@/lib/stages";
 import { cn } from "cn";
 import { ApplicationsView } from "./applications-view";
 import { BoardView } from "./board-view";
-import type { Stage, FitLabel, TailoredKind } from "@prisma/client";
-
-function TailoredDocLink({
-  applicationId,
-  docs,
-  kind,
-}: {
-  applicationId: string;
-  docs: { id: string; kind: TailoredKind }[];
-  kind: TailoredKind;
-}) {
-  const doc = docs.find((d) => d.kind === kind);
-  if (!doc) return <span className="text-muted-foreground">—</span>;
-  return (
-    <a
-      href={`/api/applications/${applicationId}/documents/${doc.id}`}
-      className="text-accent-foreground hover:underline"
-    >
-      Download
-    </a>
-  );
-}
+import type { Stage, FitLabel } from "@prisma/client";
 
 function SortHeader({
   column,
@@ -171,7 +150,6 @@ export default async function TablePage({
             <TableRow>
               {(
                 [
-                  ["dateApplied", "Date applied"],
                   ["jobTitle", "Job title"],
                   ["company", "Company"],
                 ] as const
@@ -181,7 +159,6 @@ export default async function TablePage({
                 </TableHead>
               ))}
               <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Posting</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Location</TableHead>
               {(
                 [
                   ["deadline", "Deadline"],
@@ -193,24 +170,19 @@ export default async function TablePage({
                   <SortHeader column={key} label={label} currentSort={filters.sort!} currentDir={filters.dir!} searchParams={params} />
                 </TableHead>
               ))}
-              <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">CV used</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Cover letter</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Prep notes</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Notes / next steps</TableHead>
               <TableHead className="w-9" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={13} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   No applications match these filters.
                 </TableCell>
               </TableRow>
             )}
             {rows.map((row) => (
               <TableRow key={row.id}>
-                <TableCell>{row.dateApplied ? row.dateApplied.toLocaleDateString() : "—"}</TableCell>
                 <TableCell className="font-semibold">
                   <Link href={`/applications/${row.id}`} className="hover:underline">
                     {row.jobTitle}
@@ -231,7 +203,6 @@ export default async function TablePage({
                     <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
-                <TableCell>{row.location || "—"}</TableCell>
                 <TableCell
                   className={cn(isDueSoon(row.deadline) && "font-semibold text-destructive")}
                 >
@@ -243,18 +214,6 @@ export default async function TablePage({
                 </TableCell>
                 <TableCell>
                   <StageSelect applicationId={row.id} stage={row.stage} />
-                </TableCell>
-                <TableCell>
-                  <TailoredDocLink applicationId={row.id} docs={row.tailoredDocuments} kind="cv" />
-                </TableCell>
-                <TableCell>
-                  <TailoredDocLink applicationId={row.id} docs={row.tailoredDocuments} kind="cover_letter" />
-                </TableCell>
-                <TableCell>
-                  <TailoredDocLink applicationId={row.id} docs={row.tailoredDocuments} kind="prep_notes" />
-                </TableCell>
-                <TableCell className="max-w-50 truncate text-muted-foreground">
-                  {row.notes[0]?.body ?? "—"}
                 </TableCell>
                 <TableCell>
                   <DeleteApplicationButton applicationId={row.id} jobTitle={row.jobTitle} />
