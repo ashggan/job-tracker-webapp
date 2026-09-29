@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "cn";
 import { StepFitScore } from "@/app/(app)/applications/wizard/step-fit-score";
 import { StepMaterials } from "@/app/(app)/applications/wizard/step-materials";
 import { saveElevatedMaterialsAction } from "@/lib/actions/elevate-application";
@@ -9,7 +10,9 @@ import type { ExtractedPosting } from "@/lib/ai/extract-posting";
 import type { FitScore } from "@/lib/ai/score-fit";
 import type { TailoredCv, TailoredCoverLetter } from "@/lib/ai/tailor-cv";
 
-type Step = "fit" | "materials";
+const STEPS = ["Fit", "Materials"] as const;
+const STEP_KEYS = ["fit", "materials"] as const;
+type Step = (typeof STEP_KEYS)[number];
 
 export function ElevateShell({
   applicationId,
@@ -43,8 +46,18 @@ export function ElevateShell({
     });
   }
 
+  const stepIndex = STEP_KEYS.indexOf(step);
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
+      <ol className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        {STEPS.map((label, i) => (
+          <li key={label} className={cn(i === stepIndex && "text-foreground")}>
+            {i + 1}. {label}
+          </li>
+        ))}
+      </ol>
+
       {step === "fit" && (
         <StepFitScore
           extracted={extracted}
@@ -57,12 +70,22 @@ export function ElevateShell({
       )}
 
       {step === "materials" && (
-        <StepMaterials
-          extracted={extracted}
-          wantsCoverLetter={true}
-          onBack={() => setStep("fit")}
-          onContinue={handleSave}
-        />
+        <div className="flex flex-col gap-3">
+          <StepMaterials
+            extracted={extracted}
+            wantsCoverLetter={true}
+            onBack={() => setStep("fit")}
+            onContinue={handleSave}
+          />
+          <button
+            type="button"
+            onClick={() => handleSave({ cv: null, coverLetter: null })}
+            disabled={isPending}
+            className="self-start text-[13px] text-muted-foreground hover:underline disabled:opacity-50"
+          >
+            Skip tailoring — save with fit score only
+          </button>
+        </div>
       )}
 
       {isPending && (
