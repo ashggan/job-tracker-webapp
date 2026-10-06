@@ -75,7 +75,7 @@ export type TailorCoverLetterResult =
   | { ok: true; data: TailoredCoverLetter }
   | { ok: false; error: string };
 
-function jobContext(posting: ScoreFitInput): string {
+export function jobContext(posting: ScoreFitInput): string {
   const raw = [
     `Job title: ${posting.jobTitle}`,
     `Company: ${posting.company}`,
