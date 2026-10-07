@@ -9,12 +9,7 @@ import {
 } from "docx";
 import type { TailoredKind } from "@prisma/client";
 import { tailoredCvSchema, coverLetterSchema, type TailoredCv } from "@/lib/ai/tailor-cv";
-
-const EMAIL_PATTERN = /^[\w.+-]+@[\w-]+\.[\w.-]+$/;
-// A bare domain/URL contact entry -- "ashgan.tech", "linkedin.com/in/x",
-// "github.com/x", or a full "https://..." link -- vs. plain text like a
-// location, which never has a dot-separated, space-free segment like this.
-const URL_LIKE_PATTERN = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/;
+import { classifyContactLink } from "@/lib/cv/contact-link";
 
 // Standard Word hyperlink styling (blue + underline) -- docx doesn't apply
 // this automatically for ExternalHyperlink, it only wires up the click target.
@@ -24,16 +19,12 @@ function hyperlinkRun(text: string): TextRun {
 
 // Turns one header contact entry into a real clickable link when it's an
 // email or a URL/domain; anything else (e.g. a location) stays plain text.
+// Shares classification with the PDF renderer so both agree on what counts
+// as a link.
 function contactRun(contact: string): ParagraphChild {
-  const trimmed = contact.trim();
-  if (EMAIL_PATTERN.test(trimmed)) {
-    return new ExternalHyperlink({ link: `mailto:${trimmed}`, children: [hyperlinkRun(trimmed)] });
-  }
-  if (URL_LIKE_PATTERN.test(trimmed)) {
-    const href = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
-    return new ExternalHyperlink({ link: href, children: [hyperlinkRun(trimmed)] });
-  }
-  return new TextRun(trimmed);
+  const link = classifyContactLink(contact);
+  if (!link) return new TextRun(contact.trim());
+  return new ExternalHyperlink({ link: link.href, children: [hyperlinkRun(link.text)] });
 }
 
 function contactsParagraph(contacts: string[]): Paragraph {

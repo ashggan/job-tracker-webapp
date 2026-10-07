@@ -1,5 +1,6 @@
-import { Document, Page, View, Text, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Link, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
 import type { AssembledCv } from "@/lib/cv/assemble-cv";
+import { classifyContactLink } from "@/lib/cv/contact-link";
 
 // @react-pdf/renderer is pure JS (no headless browser, no native binary) --
 // deliberately chosen over a Playwright/page.pdf() approach, since this
@@ -33,6 +34,19 @@ const styles = StyleSheet.create({
   textBlock: { marginBottom: 2 },
 });
 
+// Real clickable link when the contact is an email or URL/domain; plain
+// text otherwise (e.g. a location). Shares classification with the DOCX
+// export so both renderers agree on what counts as a link.
+function ContactItem({ contact, isLast }: { contact: string; isLast: boolean }) {
+  const link = classifyContactLink(contact);
+  return (
+    <Text style={styles.contactItem}>
+      {link ? <Link src={link.href}>{link.text}</Link> : contact}
+      {isLast ? "" : "  |"}
+    </Text>
+  );
+}
+
 function HeaderSection({ header }: { header: AssembledCv["header"] }) {
   return (
     <View>
@@ -41,10 +55,7 @@ function HeaderSection({ header }: { header: AssembledCv["header"] }) {
       {header.contacts.length > 0 && (
         <View style={styles.contactRow}>
           {header.contacts.map((contact, i) => (
-            <Text key={contact} style={styles.contactItem}>
-              {contact}
-              {i < header.contacts.length - 1 ? "  |" : ""}
-            </Text>
+            <ContactItem key={contact} contact={contact} isLast={i === header.contacts.length - 1} />
           ))}
         </View>
       )}
