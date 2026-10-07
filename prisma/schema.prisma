@@ -23,6 +23,7 @@ model User {
   resetTokens   PasswordResetToken[]
   resume        UserResume?
   wizardDraft   WizardDraft?
+  cvBases       CvBase[]
 }
 
 // Supports the in-app "forgot password" flow (§4). Not one of the spec's
@@ -168,6 +169,7 @@ model Application {
   documents          Document[]
   tailoredDocuments  TailoredDocument[]
   stageEvents        StageEvent[]
+  cvVariant          CvVariant?
 
   @@index([userId, stage])
   @@index([userId, postingUrl])
@@ -295,6 +297,73 @@ model UserResume {
 
   uploadedAt       DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+}
+
+// ---------- CV tailoring v2: fact library + per-application variant ----------
+
+// The user's full CV as structured, exact-wording facts -- roles, bullets,
+// skills, and a few pre-written summary options. This is what every
+// application's CvVariant selects from; the AI tailoring step picks IDs out
+// of this, it never writes or rewords CV text itself. Versioned (not
+// updated in place) so an old CvVariant's baseVersion can still be replayed
+// exactly after the user edits their base CV.
+model CvBase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version   Int
+
+  header    Json // {name, title, contacts: string[]}
+  // [{roleId, company, title, dates, bullets: [{bulletId, text}]}] -- role
+  // order here is authoritative; a CvVariant only picks/orders bullet IDs
+  // within a role, it can't reorder roles or alter bullet text.
+  roles     Json
+  // [{category, skills: [{skillId, text}]}]
+  skills    Json
+  languages Json // string[]
+  education Json // [{school, degree, dates}]
+  additionalSections Json // [{heading, items: string[]}]
+  // [{variantId, text}] -- 2-3 pre-written options; the AI picks one by ID,
+  // never drafts new summary text.
+  summaryVariants Json
+
+  createdAt DateTime @default(now())
+
+  cvVariants CvVariant[]
+
+  @@unique([userId, version])
+  @@index([userId])
+}
+
+// One row per application -- re-tailoring overwrites this row rather than
+// versioning it, which is what makes the storage per application small:
+// only the selection, not a full copy of the CV, is ever stored here.
+model CvVariant {
+  id            String      @id @default(cuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  cvBaseId    String
+  cvBase      CvBase @relation(fields: [cvBaseId], references: [id], onDelete: Restrict)
+  baseVersion Int // CvBase.version this was built against, for exact replay
+
+  summaryVariantId String
+  roleSelections    Json // [{roleId, bulletIds: string[]}] -- order = selection order
+  skillIds          Json // string[]
+  reasoning         String? @db.Text
+
+  // Unused for now -- reserved for per-application link tracking
+  // (?r=<token> on the portfolio URL) in a later phase.
+  trackingToken String? @unique
+
+  // Nullable, rare-case frozen copy of the rendered PDF. Not written by
+  // default -- the normal path renders on download from cvBase + this row.
+  snapshotPdf Bytes?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cvBaseId])
 }
 
 // ---------- Wizard draft (§5.5, guided-add) ----------
